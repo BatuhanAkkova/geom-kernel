@@ -26,6 +26,20 @@ namespace Geom {
         virtual Scalar eval(const Point3& p) const = 0;
 
         /**
+         * @brief Calculate the gradient (surface normal * length) of the SDF at p.
+         * Default implementation uses central finite differences.
+         * @param p The query point
+         * @param h The step size for finite difference
+         * @return Vec3 The gradient vector
+         */
+        virtual Vec3 gradient(const Point3& p, Scalar h = 0.0001) const {
+            const Scalar dx = eval(p + Vec3(h, 0, 0)) - eval(p - Vec3(h, 0, 0));
+            const Scalar dy = eval(p + Vec3(0, h, 0)) - eval(p - Vec3(0, h, 0));
+            const Scalar dz = eval(p + Vec3(0, 0, h)) - eval(p - Vec3(0, 0, h));
+            return Vec3(dx, dy, dz).normalized(); // Note: This is actually the normal if normalized
+        }
+
+        /**
          * @brief Get the axis-aligned bounding box of this SDF.
          * @return BoundingBox Guaranteed to contain the zero-isosurface.
          */
