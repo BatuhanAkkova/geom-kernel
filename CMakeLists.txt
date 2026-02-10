@@ -26,3 +26,7 @@ target_link_libraries(phase2_test PRIVATE GeomKernel)
 # Phase 3 Benchmark
 add_executable(phase3_benchmark src/phase3_benchmark.cpp)
 target_link_libraries(phase3_benchmark PRIVATE GeomKernel)
+
+# Phase 4 Test
+add_executable(phase4_test src/phase4_test.cpp)
+target_link_libraries(phase4_test PRIVATE GeomKernel)
