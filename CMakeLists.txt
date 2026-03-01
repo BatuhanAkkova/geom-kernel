@@ -35,3 +35,7 @@ target_link_libraries(phase4_test PRIVATE GeomKernel)
 add_executable(phase5_test src/phase5_test.cpp)
 target_link_libraries(phase5_test PRIVATE GeomKernel)
 
+# Phase 6 Test
+add_executable(phase6_test src/phase6_test.cpp)
+target_link_libraries(phase6_test PRIVATE GeomKernel)
+

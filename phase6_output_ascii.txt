@@ -1,0 +1,48 @@
+--- Validation Results: Sphere R=10 ---
+Found 489 issues:
+ - Overhangs: 169
+ - Curvature violations: 0
+ - Thin features: 320
+  At (-1, -3, 0): Overhang angle exceeds limit (Value: 162.45)
+  At (-1.00, -3.00, 0.00): Feature thickness below bead width (Value: 0.30)
+  At (0.00, -3.00, 0.00): Overhang angle exceeds limit (Value: 163.30)
+  At (0.00, -3.00, 0.00): Feature thickness below bead width (Value: 0.30)
+  At (1.00, -3.00, 0.00): Overhang angle exceeds limit (Value: 162.45)
+  ... and 484 more.
+
+--- Validation Results: Tiny Sphere R=2 ---
+Found 449 issues:
+ - Overhangs: 29
+ - Curvature violations: 210
+ - Thin features: 210
+  At (20.00, -1.00, 8.00): Overhang angle exceeds limit (Value: 153.43)
+  At (20.00, -1.00, 8.00): Curvature radius too small (Value: 2.23)
+  At (20.00, -1.00, 8.00): Feature thickness below bead width (Value: 4.50)
+  At (19.50, -0.50, 8.00): Overhang angle exceeds limit (Value: 160.53)
+  At (19.50, -0.50, 8.00): Curvature radius too small (Value: 2.12)
+  ... and 444 more.
+
+--- Validation Results: Thin Box (thick=1) ---
+Found 1065 issues:
+ - Overhangs: 19
+ - Curvature violations: 164
+ - Thin features: 882
+  At (39.50, -5.00, 5.00): Curvature radius too small (Value: 0.01)
+  At (39.50, -5.00, 5.00): Feature thickness below bead width (Value: 1.80)
+  At (40.00, -5.00, 5.00): Curvature radius too small (Value: 0.01)
+  At (40.50, -5.00, 5.00): Curvature radius too small (Value: 0.01)
+  At (40.50, -5.00, 5.00): Feature thickness below bead width (Value: 1.80)
+  ... and 1060 more.
+
+--- Validation Results: Thin Horizontal Plate ---
+Found 1407 issues:
+ - Overhangs: 361
+ - Curvature violations: 164
+ - Thin features: 882
+  At (-10.00, 20.00, 9.00): Curvature radius too small (Value: 0.01)
+  At (-10.00, 20.00, 9.00): Feature thickness below bead width (Value: 3.60)
+  At (-9.00, 20.00, 9.00): Curvature radius too small (Value: 0.01)
+  At (-9.00, 20.00, 9.00): Feature thickness below bead width (Value: 3.00)
+  At (-8.00, 20.00, 9.00): Curvature radius too small (Value: 0.01)
+  ... and 1402 more.
+
