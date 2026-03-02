@@ -2,6 +2,7 @@
 
 #include "Geometry.h"
 #include "BoundingBox.h"
+#include "Autodiff.h"
 #include <memory>
 
 namespace Geom {
@@ -24,6 +25,17 @@ namespace Geom {
          * @return Scalar Distance to the nearest surface. Negative if inside.
          */
         virtual Scalar eval(const Point3& p) const = 0;
+
+        /**
+         * @brief Templated evaluate for Differentiable points.
+         * Default implementation uses central differences if not overridden, 
+         * but we prefer to override for exact analytical derivatives.
+         */
+        virtual DualScalar evalD(const Point3D& p) const {
+            // Default fallback: Finite differences or just evaluate val
+            // Most primitives will override this for exact autodiff.
+            return DualScalar(eval(Point3(p.x.val, p.y.val, p.z.val)));
+        }
 
         /**
          * @brief Calculate the gradient (surface normal * length) of the SDF at p.

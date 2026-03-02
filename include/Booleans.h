@@ -13,6 +13,10 @@ namespace Geom {
         Scalar eval(const Point3& p) const override {
             return std::min(a->eval(p), b->eval(p));
         }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return min(a->evalD(p), b->evalD(p));
+        }
         
         BoundingBox boundingBox() const override {
             BoundingBox box = a->boundingBox();
@@ -28,6 +32,10 @@ namespace Geom {
         
         Scalar eval(const Point3& p) const override {
             return std::max(a->eval(p), b->eval(p));
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return max(a->evalD(p), b->evalD(p));
         }
         
         BoundingBox boundingBox() const override {
@@ -54,6 +62,10 @@ namespace Geom {
         
         Scalar eval(const Point3& p) const override {
             return std::max(a->eval(p), -b->eval(p));
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return max(a->evalD(p), b->evalD(p) * -1.0);
         }
         
         BoundingBox boundingBox() const override {

@@ -16,6 +16,13 @@ namespace Geom {
             return (p - center).length() - radius;
         }
 
+        DualScalar evalD(const Point3D& p) const override {
+            DualScalar dx = p.x - center.x;
+            DualScalar dy = p.y - center.y;
+            DualScalar dz = p.z - center.z;
+            return sqrt(dx*dx + dy*dy + dz*dz) - radius;
+        }
+
         BoundingBox boundingBox() const override {
             Vec3 r(radius, radius, radius);
             return BoundingBox(center - r, center + r);
@@ -41,6 +48,20 @@ namespace Geom {
             return outside_dist + inside_dist;
         }
 
+        DualScalar evalD(const Point3D& p) const override {
+            DualScalar qx = abs(p.x - center.x) - bounds.x;
+            DualScalar qy = abs(p.y - center.y) - bounds.y;
+            DualScalar qz = abs(p.z - center.z) - bounds.z;
+
+            DualScalar u = max(qx, 0.0);
+            DualScalar v = max(qy, 0.0);
+            DualScalar w = max(qz, 0.0);
+            DualScalar outside_dist = sqrt(u*u + v*v + w*w);
+
+            DualScalar inside_dist = min(max(qx, max(qy, qz)), 0.0);
+            return outside_dist + inside_dist;
+        }
+
         BoundingBox boundingBox() const override {
             return BoundingBox(center - bounds, center + bounds);
         }
@@ -58,15 +79,6 @@ namespace Geom {
 
         Scalar eval(const Point3& p) const override {
             Point3 local = p - center;
-            Vec3 d = Vec3(std::abs(std::sqrt(local.x * local.x + local.y * local.y)) - radius, 
-                          std::abs(local.z) - height * 0.5, 
-                          0); // z component logic
-            
-            Scalar dist_outside = max(d, Vec3(0,0,0)).length(); // treating d as 2D vector effectively (x, y)
-             // Re-evaluating logic for 2D length of first two components:
-             // Cylinder SDF: d = length(xz) - r. 
-             // Capped Cylinder: max(length(xy) - r, abs(z) - h)
-             
             Scalar x = std::sqrt(local.x * local.x + local.y * local.y) - radius;
             Scalar y = std::abs(local.z) - height * 0.5;
             
@@ -75,6 +87,21 @@ namespace Geom {
             Scalar w = std::min(std::max(x, y), 0.0);
             
             return std::sqrt(u*u + v*v) + w;
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            DualScalar lx = p.x - center.x;
+            DualScalar ly = p.y - center.y;
+            DualScalar lz = p.z - center.z;
+
+            DualScalar x = sqrt(lx*lx + ly*ly) - radius;
+            DualScalar y = abs(lz) - height * 0.5;
+
+            DualScalar u = max(x, 0.0);
+            DualScalar v = max(y, 0.0);
+            DualScalar w = min(max(x, y), 0.0);
+
+            return sqrt(u*u + v*v) + w;
         }
 
         BoundingBox boundingBox() const override {
@@ -92,6 +119,10 @@ namespace Geom {
 
         Scalar eval(const Point3& p) const override {
             return p.dot(normal) + d;
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return p.x * normal.x + p.y * normal.y + p.z * normal.z + d;
         }
 
         BoundingBox boundingBox() const override {
