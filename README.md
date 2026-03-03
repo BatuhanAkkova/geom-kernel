@@ -81,6 +81,27 @@ int main() {
 
 ---
 
+## Gallery of Results
+
+Below are featured results generated using the `GeomKernel` core and its physics-informed extensions.
+
+| Physics-Informed Design | Smooth Junctions (Fillets) |
+|:---:|:---:|
+| ![Physics Vessel](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/vessel_demo.png) | ![Smooth Unions](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/smooth_union.png) |
+| *Automated wall thickness driven by internal pressure and material stress limits.* | *High-fidelity blending between primitives for structural integrity.* |
+
+| ShapeKernel Primitives | Complex Topology Optimization |
+|:---:|:---:|
+| ![Ribbed Pipe](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/ribbed_pipe.png) | ![TopoOpt Result](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/topo_opt.png) |
+| *Engineering-ready components: Ribbed pipes with internal cooling channels.* | *High-resolution SIMP optimization bridged to smooth SDF geometry.* |
+
+| Space Warping & Fields | Differentiable Geometry |
+|:---:|:---:|
+| ![Twisted Bar](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/twist_field.png) | ![Sensitivity Analysis](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/sensitivity.png) |
+| *Non-linear spatial transformations (Twist) and Field-driven offsets.* | *Exact analytical gradients computed via Dual-Number Autodiff.* |
+
+---
+
 ## Manufacturing Awareness (WAAM)
 
 GeomKernel enforces real-world manufacturability:
