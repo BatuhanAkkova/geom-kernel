@@ -16,6 +16,16 @@ namespace Geom {
         return std::max(a, b) + h * h * k * 0.25;
     }
 
+    inline DualScalar smin(DualScalar a, DualScalar b, Scalar k) {
+        DualScalar h = max(DualScalar(k) - abs(a - b), 0.0) / k;
+        return min(a, b) - h * h * k * 0.25;
+    }
+
+    inline DualScalar smax(DualScalar a, DualScalar b, Scalar k) {
+        DualScalar h = max(DualScalar(k) - abs(a - b), 0.0) / k;
+        return max(a, b) + h * h * k * 0.25;
+    }
+
     class SmoothUnion : public SDF {
         SDFPtr a, b;
         Scalar k;
@@ -24,6 +34,10 @@ namespace Geom {
         
         Scalar eval(const Point3& p) const override {
             return smin(a->eval(p), b->eval(p), k);
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return smin(a->evalD(p), b->evalD(p), k);
         }
         
         BoundingBox boundingBox() const override {
@@ -43,6 +57,10 @@ namespace Geom {
         
         Scalar eval(const Point3& p) const override {
             return smax(a->eval(p), b->eval(p), k);
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return smax(a->evalD(p), b->evalD(p), k);
         }
         
         BoundingBox boundingBox() const override {
@@ -66,6 +84,10 @@ namespace Geom {
         
         Scalar eval(const Point3& p) const override {
             return smax(a->eval(p), -b->eval(p), k);
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            return smax(a->evalD(p), b->evalD(p) * -1.0, k);
         }
         
         BoundingBox boundingBox() const override {

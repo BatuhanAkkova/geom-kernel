@@ -21,7 +21,7 @@ namespace Geom {
             double rmin; // filter radius in voxels
         };
 
-    private:
+    protected:
         Config cfg;
         std::vector<double> x;      // densities [0, 1]
         std::vector<double> dc;     // sensitivities (dC/dx)

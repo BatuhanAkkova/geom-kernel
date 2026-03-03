@@ -23,6 +23,10 @@ namespace Geom {
             return sdf->eval(p) - r;
         }
 
+        DualScalar evalD(const Point3D& p) const override {
+            return sdf->evalD(p) - r;
+        }
+
         BoundingBox boundingBox() const override {
             BoundingBox box = sdf->boundingBox();
             box.min -= Vec3(r, r, r);
@@ -48,6 +52,10 @@ namespace Geom {
             return std::abs(sdf->eval(p)) - thickness;
         }
 
+        DualScalar evalD(const Point3D& p) const override {
+            return abs(sdf->evalD(p)) - thickness;
+        }
+
         BoundingBox boundingBox() const override {
             BoundingBox box = sdf->boundingBox();
             box.min -= Vec3(thickness, thickness, thickness);
@@ -67,6 +75,13 @@ namespace Geom {
 
         Scalar eval(const Point3& p) const override {
             return sdf->eval(p) - field->eval(p);
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            // Field should also support Dual evaluation if we want exact spatial derivatives of the field.
+            // For now, if Field doesn't support evalD, we use the value as a constant.
+            // But let's check Field.h.
+            return sdf->evalD(p) - field->eval(p); 
         }
 
         BoundingBox boundingBox() const override {
@@ -105,6 +120,17 @@ namespace Geom {
             Scalar qz = s * p.x + c * p.z;
             Point3 q(qx, p.y, qz);
             return sdf->eval(q);
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            using std::cos;
+            using std::sin;
+            DualScalar c = cos(p.y * k);
+            DualScalar s = sin(p.y * k);
+            DualScalar qx = c * p.x - s * p.z;
+            DualScalar qz = s * p.x + c * p.z;
+            Point3D q(qx, p.y, qz);
+            return sdf->evalD(q);
         }
 
         BoundingBox boundingBox() const override {
