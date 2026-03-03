@@ -1,4 +1,4 @@
-# 🌀 GeomKernel: High-Performance SDF Geometry Kernel
+# GeomKernel: High-Performance SDF Geometry Kernel
 
 [![C++20](https://img.shields.io/badge/C%2B%2B-20-blue.svg)](https://en.cppreference.com/w/cpp/20)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -99,6 +99,21 @@ Below are featured results generated using the `GeomKernel` core and its physics
 |:---:|:---:|
 | ![Twisted Bar](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/twist_field.png) | ![Sensitivity Analysis](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/sensitivity.png) |
 | *Non-linear spatial transformations (Twist) and Field-driven offsets.* | *Exact analytical gradients computed via Dual-Number Autodiff.* |
+
+---
+
+### How to Run the Gallery
+
+All featured items in the gallery can be generated locally using the `gallery_showcase` executable:
+
+```bash
+mkdir build && cd build
+cmake ..
+make gallery_showcase
+./gallery_showcase
+```
+
+This will produce the corresponding `.stl` files for each showcase item in your build directory.
 
 ---
 
