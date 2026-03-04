@@ -105,15 +105,17 @@ GeomKernel is optimized for high-throughput geometric evaluation. In our latest 
 
 ### Showcase Results
 
-````carousel
 ![Gyroid Lattice](gallery_gyroid_lattice.png)
-<!-- slide -->
+*Gyroid intersection with a Box.*
+
 ![Smooth Chain](gallery_smooth_chain.png)
-<!-- slide -->
+*SmoothUnion of two interlocking Toruses.*
+
 ![Diamond Ball](gallery_diamond_ball.png)
-<!-- slide -->
+*Diamond TPMS intersection with a Sphere.*
+
 ![Transformed Box](gallery_transformed_box.png)
-````
+*Box with non-orthogonal composite transformation.*
 
 | Shape | Triangles | Meshing Time | Feature Used |
 |---|---|---|---|
