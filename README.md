@@ -15,8 +15,8 @@ A modern, high-performance, header-only C++ library for **Signed Distance Functi
 - **Transformation Matrix**: Full `Mat4` support for translation, rotation, and non-uniform scaling.
 - **High-Performance Meshers**: Multi-threaded Marching Cubes and Dual Contouring.
 - **Voxelization & Sparse Grids**: Support for dense `VoxelGrid` and memory-efficient `SparseVoxelGrid`.
-- **Differentiable Core**: Exact **Analytical Gradients** via forward-mode Automatic Differentiation.
-- **Analytical Hessians**: Second-order derivatives (curvature) for advanced optimization.
+- **Differentiable Template Engine**: Exact analytical gradients and Hessians via nested forward-mode Automatic Differentiation (Dual Numbers).
+- **Parameter Exposure**: Unified parameter API (`getParam`, `setParam`, `evalParamD`) for generic multiphysics optimization.
 - **External Data**: Convert Point Clouds and Meshes (STL/OBJ) directly into SDFs.
 
 ---
@@ -79,22 +79,20 @@ int main() {
 }
 ```
 
-## Manufacturing Awareness (WAAM)
+## Automatic Differentiation & Evaluation
 
-GeomKernel enforces real-world manufacturability:
+GeomKernel uses a generic `SDFNode<Derived>` / `FieldNode<Derived>` CRTP architecture that natively supports Forward-Mode Automatic Differentiation via Dual numbers.
 
 ```cpp
-#include "GeomKernel/Manufacturing.h"
+// 1. Evaluate Scalar Distance
+Scalar dist = result->eval(Point3(5, 5, 5));
 
-// Validate a geometry for WAAM printing
-WAAMValidator validator;
-validator.min_bead_width = 4.0; 
-validator.max_overhang_angle = 45.0; // Degrees
+// 2. Evaluate Gradient (Analytical Normal * Length)
+Vec3 grad = result->gradient(Point3(5, 5, 5));
 
-auto report = validator.analyze(my_geometry_sdf);
-if (!report.is_buildable) {
-    std::cout << "Design contains unbuildable regions: " << report.reason << std::endl;
-}
+// 3. Evaluate Hessian Matrix (Curvature / 2nd-order derivatives)
+Field::enableHessian = true; // Toggle for heavy compute
+Mat3 hess = result->hessian(Point3(5, 5, 5));
 ```
 
 ---

@@ -2,7 +2,7 @@
 #include "../include/SDF.h"
 #include "../include/Primitives.h"
 #include "../include/Booleans.h"
-#include "../include/SmoothBooleans.h"
+#include "../include/Booleans.h"
 #include "../include/Transform.h"
 #include "../include/TPMS.h"
 #include "../include/VoxelGrid.h"

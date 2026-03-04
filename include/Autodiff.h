@@ -116,7 +116,16 @@ namespace Geom {
 
         T dot(const Vec3T& other) const { return x * other.x + y * other.y + z * other.z; }
         T lengthSquared() const { return x * x + y * y + z * z; }
-        T length() const { using std::sqrt; return sqrt(lengthSquared()); }
+        T length() const { 
+            using std::sqrt; 
+            T lsq = lengthSquared();
+            // Protect against zero length causing NaN in gradients
+            if constexpr (std::is_same_v<T, Scalar>) {
+                return sqrt(lsq);
+            } else {
+                return lsq.val > 1e-12 ? sqrt(lsq) : T(0); 
+            }
+        }
     };
 
     using DualScalar = Dual<Scalar>;
@@ -131,7 +140,10 @@ namespace Geom {
     template <typename T>
     auto sqrt(const Dual<T>& d) {
         using std::sqrt;
+        using std::sqrt;
         auto s = sqrt(d.val);
+        // Avoid division by zero when val is exactly 0
+        if (s == 0) return Dual<decltype(s)>(0, 0); 
         return Dual<decltype(s)>(s, d.der / (static_cast<decltype(s)>(2) * s));
     }
 

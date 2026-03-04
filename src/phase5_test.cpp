@@ -5,7 +5,7 @@
 #include "../include/Booleans.h"
 #include "../include/MarchingCubes.h"
 #include "../include/STLExporter.h"
-#include "../include/Fields.h"
+#include "../include/Field.h"
 #include <iostream>
 #include <vector>
 #include <string>

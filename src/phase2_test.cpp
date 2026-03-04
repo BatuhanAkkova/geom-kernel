@@ -1,6 +1,6 @@
 #include "../include/SDF.h"
 #include "../include/Primitives.h"
-#include "../include/SmoothBooleans.h"
+#include "../include/Booleans.h"
 #include "../include/Modifiers.h"
 #include <iostream>
 #include <cassert>

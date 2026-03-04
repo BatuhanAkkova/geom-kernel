@@ -1,7 +1,7 @@
 #include "ShapeKernel.h"
 #include "STLExporter.h"
 #include "MarchingCubes.h"
-#include "Manufacturing.h"
+
 #include <iostream>
 #include <cassert>
 #include <iomanip>

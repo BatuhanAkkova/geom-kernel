@@ -1,7 +1,7 @@
 #include "../include/Geometry.h"
 #include "../include/SDF.h"
 #include "../include/Primitives.h"
-#include "../include/Manufacturing.h"
+
 #include <iostream>
 #include <iomanip>
 

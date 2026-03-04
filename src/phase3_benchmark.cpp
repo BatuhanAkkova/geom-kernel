@@ -6,11 +6,12 @@
 #include <vector>
 #include <chrono>
 #include <memory>
+#include <iomanip>
 
 using namespace Geom;
 
 // specific complex scene for benchmarking
-class ComplexScene : public SDF {
+class ComplexScene : public SDFNode<ComplexScene> {
     std::vector<SDFPtr> spheres;
     BoundingBox bounds;
 public:
@@ -22,73 +23,94 @@ public:
                     Point3 center(x * spacing, y * spacing, z * spacing);
                     auto s = std::make_shared<Sphere>(center, radius);
                     spheres.push_back(s);
-                    
-                    // Simple bounding box expansion
                     bounds.expand(s->boundingBox());
                 }
             }
         }
     }
 
-    Scalar eval(const Point3& p) const override {
-        // Naive evaluation: Union of all spheres.
-        // This is intentionally slow O(N) to simulate complex SDF graphs
-        // or we can use a more optimized structure if we want to test just the meshing overhead.
-        // But for "Scaling", we want to see how it handles many primitives.
-        // However, standard Union is min().
-        
-        Scalar min_dist = 1e9;
+    template <typename T>
+    T evaluate(const Vec3T<T>& p) const {
+        T min_dist = static_cast<T>(1e9);
         for(const auto& s : spheres) {
-            min_dist = std::min(min_dist, s->eval(p));
+            if constexpr (std::is_same_v<T, Scalar>) {
+                Point3 pt(p.x, p.y, p.z);
+                min_dist = std::min(min_dist, s->eval(pt));
+            } else if constexpr (std::is_same_v<T, DualScalar>) {
+                Point3D pt(p.x, p.y, p.z);
+                min_dist = min(min_dist, s->evalD(pt));
+            } else if constexpr (std::is_same_v<T, Dual2Scalar>) {
+                Point3D2 pt(p.x, p.y, p.z);
+                min_dist = min(min_dist, s->evalD2(pt));
+            }
         }
         return min_dist;
     }
 
-    BoundingBox boundingBox() const override {
-        return bounds;
-    }
-    
-    // Helper to get raw sphere count
+    BoundingBox boundingBox() const override { return bounds; }
     size_t count() const { return spheres.size(); }
 };
 
 int main() {
-    // 1. Setup Scene
-    // 5x5x5 grid = 125 spheres.
-    // If we do naive eval, valid point checks are 125 ops.
-    // Grid resolution will determine total eval calls.
-    int gridSize = 5; 
+    int gridSize = 3; 
     double spacing = 2.5;
     double radius = 1.0;
     
     std::cout << "Building Scene with " << (gridSize*gridSize*gridSize) << " spheres..." << std::endl;
     ComplexScene scene(gridSize, spacing, radius);
     BoundingBox bounds = scene.boundingBox();
-    
-    // Add some padding to bounds
     bounds.min = bounds.min - Vec3(1,1,1);
     bounds.max = bounds.max + Vec3(1,1,1);
     
     std::cout << "Bounds: " << bounds.min.x << "," << bounds.min.y << "," << bounds.min.z << " to " 
-              << bounds.max.x << "," << bounds.max.y << "," << bounds.max.z << std::endl;
+              << bounds.max.x << "," << bounds.max.y << "," << bounds.max.z << "\n\n";
 
-    double resolutions[] = { 0.2, 0.1 }; // Coarse and Fine
-    
-    for(double res : resolutions) {
-        std::cout << "\n-----------------------------------" << std::endl;
-        std::cout << "Benchmarking Resolution: " << res << std::endl;
-        
-        Mesh mesh;
-        auto start = std::chrono::high_resolution_clock::now();
-        
-        MarchingCubes::march(scene, bounds, res, mesh);
-        
-        auto end = std::chrono::high_resolution_clock::now();
-        std::chrono::duration<double> elapsed = end - start;
-        
-        std::cout << "Time: " << elapsed.count() << " s" << std::endl;
-        std::cout << "Triangles: " << mesh.triangles.size() << std::endl;
+    // Generate test points
+    double res = 0.5;
+    std::vector<Point3> points;
+    for(double z = bounds.min.z; z <= bounds.max.z; z += res) {
+        for(double y = bounds.min.y; y <= bounds.max.y; y += res) {
+            for(double x = bounds.min.x; x <= bounds.max.x; x += res) {
+                points.push_back(Point3(x, y, z));
+            }
+        }
     }
+    
+    std::cout << "Number of Evaluation Points: " << points.size() << "\n\n";
+    
+    // Disable Hessians initially
+    Field::enableHessian = false;
+
+    // 1. Eval Only
+    auto start = std::chrono::high_resolution_clock::now();
+    double sum = 0;
+    for (const auto& p : points) {
+        sum += scene.eval(p);
+    }
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> ms_eval = (end - start);
+    std::cout << "1. Eval Only:          " << std::setw(8) << (ms_eval.count() * 1000.0) << " ms \t(Result: " << sum << ")\n";
+
+    // 2. Eval + Gradient
+    start = std::chrono::high_resolution_clock::now();
+    double sum2 = 0;
+    for (const auto& p : points) {
+        sum2 += scene.gradient(p).x;
+    }
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> ms_grad = (end - start);
+    std::cout << "2. Eval + Gradient:    " << std::setw(8) << (ms_grad.count() * 1000.0) << " ms \t(Result: " << sum2 << ")\n";
+
+    // 3. Eval + Hessian
+    Field::enableHessian = true; // MUST enable for hessian
+    start = std::chrono::high_resolution_clock::now();
+    double sum3 = 0;
+    for (const auto& p : points) {
+        sum3 += scene.hessian(p)(0,0);
+    }
+    end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> ms_hess = (end - start);
+    std::cout << "3. Eval + Hessian:     " << std::setw(8) << (ms_hess.count() * 1000.0) << " ms \t(Result: " << sum3 << ")\n";
 
     return 0;
 }

@@ -3,7 +3,6 @@
 #include "SDF.h"
 #include "Primitives.h"
 #include "Booleans.h"
-#include "SmoothBooleans.h"
 #include "Modifiers.h"
 #include <vector>
 
@@ -12,19 +11,29 @@ namespace ShapeKernel {
 
     /**
      * @brief A Pipe is a line-segment based capsule.
-     * Useful for routing, framework, etc.
      */
-    class Pipe : public SDF {
+    class Pipe : public SDFNode<Pipe> {
         Point3 start, end;
         Scalar radius;
     public:
         Pipe(Point3 s, Point3 e, Scalar r) : start(s), end(e), radius(r) {}
 
-        Scalar eval(const Point3& p) const override {
-            Vec3 pa = p - start;
-            Vec3 ba = end - start;
-            Scalar h = std::clamp(pa.dot(ba) / ba.lengthSquared(), 0.0, 1.0);
-            return (pa - ba * h).length() - radius;
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            Vec3T<T> t_start(static_cast<T>(start.x), static_cast<T>(start.y), static_cast<T>(start.z));
+            Vec3T<T> t_end(static_cast<T>(end.x), static_cast<T>(end.y), static_cast<T>(end.z));
+            
+            Vec3T<T> pa = p - t_start;
+            Vec3T<T> ba = t_end - t_start;
+            
+            T h = pa.dot(ba) / ba.lengthSquared();
+            if constexpr (std::is_same_v<T, Scalar>) {
+                h = std::max(static_cast<T>(0.0), std::min(static_cast<T>(1.0), h));
+            } else {
+                h = max(static_cast<T>(0.0), min(static_cast<T>(1.0), h));
+            }
+            
+            return (pa - ba * h).length() - static_cast<T>(radius);
         }
 
         BoundingBox boundingBox() const override {
@@ -37,14 +46,18 @@ namespace ShapeKernel {
     /**
      * @brief A SmoothJunction provides a filleted union between two SDFs.
      */
-    class SmoothJunction : public SDF {
+    class SmoothJunction : public SDFNode<SmoothJunction> {
         SDFPtr a, b;
         Scalar filletRadius;
     public:
         SmoothJunction(SDFPtr a, SDFPtr b, Scalar r) : a(a), b(b), filletRadius(r) {}
 
-        Scalar eval(const Point3& p) const override {
-            return smin(a->eval(p), b->eval(p), filletRadius);
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            if constexpr (std::is_same_v<T, Scalar>) return smin(a->eval(p), b->eval(p), filletRadius);
+            else if constexpr (std::is_same_v<T, DualScalar>) return smin(a->evalD(p), b->evalD(p), filletRadius);
+            else if constexpr (std::is_same_v<T, Dual2Scalar>) return smin(a->evalD2(p), b->evalD2(p), filletRadius);
+            return static_cast<T>(0);
         }
 
         BoundingBox boundingBox() const override {
@@ -59,9 +72,8 @@ namespace ShapeKernel {
 
     /**
      * @brief A StructuralRib adds a reinforcing blade to a base geometry.
-     * Defined by a mid-plane, thickness, and height limit.
      */
-    class StructuralRib : public SDF {
+    class StructuralRib : public SDFNode<StructuralRib> {
         SDFPtr base;
         Plane midPlane;
         Scalar thickness;
@@ -70,30 +82,28 @@ namespace ShapeKernel {
         StructuralRib(SDFPtr base, Plane p, Scalar t, Scalar h) 
             : base(base), midPlane(p), thickness(t), height(h) {}
 
-        Scalar eval(const Point3& p) const override {
-            // Distance to plane (signed)
-            Scalar distToPlane = std::abs(midPlane.eval(p));
-            // Rib thickness constraint
-            Scalar ribDist = distToPlane - thickness * 0.5;
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            T distToPlane = abs(midPlane.evaluate<T>(p));
+            T ribDist = distToPlane - static_cast<T>(thickness * 0.5);
             
-            // Limit rib height relative to base surface? 
-            // Simplified: Rib is an infinite slab intersected with an offset of the base
-            // Or rib is only where base-SDF is within 'height' distance.
-            Scalar baseDist = base->eval(p);
+            T baseDist;
+            if constexpr (std::is_same_v<T, Scalar>) baseDist = base->eval(p);
+            else if constexpr (std::is_same_v<T, DualScalar>) baseDist = base->evalD(p);
+            else if constexpr (std::is_same_v<T, Dual2Scalar>) baseDist = base->evalD2(p);
             
-            // Rib exists where baseDist < height and |distToPlane| < thickness/2
-            // We want it to be a smooth addition.
-            Scalar heightConstraint = baseDist - height;
-            
-            // Intersection of thickness slab and height constraint
-            Scalar solidRib = std::max(ribDist, heightConstraint);
-            
-            // Union with base
-            return std::min(baseDist, solidRib);
+            T heightConstraint = baseDist - static_cast<T>(height);
+            T solidRib;
+            if constexpr (std::is_same_v<T, Scalar>) {
+                solidRib = std::max(ribDist, heightConstraint);
+                return std::min(baseDist, solidRib);
+            } else {
+                solidRib = max(ribDist, heightConstraint);
+                return min(baseDist, solidRib);
+            }
         }
 
         BoundingBox boundingBox() const override {
-            // Conservative: Box of base expanded by height
             BoundingBox box = base->boundingBox();
             Vec3 h(height, height, height);
             box.min -= h;
@@ -105,15 +115,18 @@ namespace ShapeKernel {
     /**
      * @brief A CoolingChannel is a subtracted internal path.
      */
-    class CoolingChannel : public SDF {
+    class CoolingChannel : public SDFNode<CoolingChannel> {
         SDFPtr body;
         SDFPtr path;
     public:
         CoolingChannel(SDFPtr body, SDFPtr path) : body(body), path(path) {}
 
-        Scalar eval(const Point3& p) const override {
-            // body - path
-            return std::max(body->eval(p), -path->eval(p));
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            if constexpr (std::is_same_v<T, Scalar>) return std::max(body->eval(p), -path->eval(p));
+            else if constexpr (std::is_same_v<T, DualScalar>) return max(body->evalD(p), path->evalD(p) * -1.0);
+            else if constexpr (std::is_same_v<T, Dual2Scalar>) return max(body->evalD2(p), path->evalD2(p) * -1.0);
+            return static_cast<T>(0);
         }
 
         BoundingBox boundingBox() const override {
@@ -124,22 +137,24 @@ namespace ShapeKernel {
     /**
      * @brief EngineeringShell creates a hollow wall of specified thickness.
      */
-    class EngineeringShell : public SDF {
+    class EngineeringShell : public SDFNode<EngineeringShell> {
         SDFPtr body;
         Scalar thickness;
         bool internal;
     public:
         EngineeringShell(SDFPtr b, Scalar t, bool i = true) : body(b), thickness(t), internal(i) {}
 
-        Scalar eval(const Point3& p) const override {
-            Scalar d = body->eval(p);
-            if (internal) {
-                // Interior shell: surface is d=0 and d=-t
-                return std::max(d, -(d + thickness));
-            } else {
-                // Exterior shell: surface is d=0 and d=t
-                return std::max(-d, d - thickness);
-            }
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            T d;
+            if constexpr (std::is_same_v<T, Scalar>) d = body->eval(p);
+            else if constexpr (std::is_same_v<T, DualScalar>) d = body->evalD(p);
+            else if constexpr (std::is_same_v<T, Dual2Scalar>) d = body->evalD2(p);
+            
+            T t = static_cast<T>(thickness);
+            
+            if (internal) return max(d, (d + t) * -1.0);
+            else return max(d * -1.0, d - t);
         }
 
         BoundingBox boundingBox() const override {

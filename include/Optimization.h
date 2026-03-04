@@ -26,10 +26,6 @@ namespace Geom {
     public:
         /**
          * @brief Perform a parallel parameter sweep over an SDF-generating function.
-         * @param paramRange Vector of parameter values to test.
-         * @param generator Function that takes a parameter and returns an SDF.
-         * @param objective Function that evaluates an SDF and returns a scalar objective.
-         * @return Vector of OptimizationResults.
          */
         static std::vector<OptimizationResult> sweep(
             const std::vector<Scalar>& paramRange,
@@ -38,7 +34,6 @@ namespace Geom {
         {
             std::vector<OptimizationResult> results(paramRange.size());
             
-            // Parallel execution using C++17 execution policies
             std::vector<size_t> indices(paramRange.size());
             for(size_t i = 0; i < indices.size(); ++i) indices[i] = i;
 
@@ -52,19 +47,15 @@ namespace Geom {
         }
 
         /**
-         * @brief Compute the sensitivity of an SDF objective at a specific point p with respect to parameter v.
-         * Uses Automatic Differentiation.
+         * @brief Compute the sensitivity of an SDF objective at a specific point p with respect to a parameter.
+         * Now natively uses the `Field` exposure architecture.
          */
         static Scalar computeSensitivity(
             const Point3& queryPoint,
-            std::function<DualScalar(Point3D, DualScalar)> differentiableSDFModel,
-            Scalar parameterValue) 
+            SDFPtr sdf,
+            size_t paramIndex) 
         {
-            // Seed the parameter with a derivative of 1
-            DualScalar param = DualScalar::variable(parameterValue);
-            Point3D pD(DualScalar(queryPoint.x), DualScalar(queryPoint.y), DualScalar(queryPoint.z));
-            
-            DualScalar result = differentiableSDFModel(pD, param);
+            DualScalar result = sdf->evalParamD(queryPoint, paramIndex);
             return result.der;
         }
     };

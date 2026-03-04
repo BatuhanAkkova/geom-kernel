@@ -2,14 +2,19 @@
 
 #include "SDF.h"
 #include "Geometry.h"
+#include <algorithm>
+#include <cmath>
 
 namespace Geom {
 
     /**
      * @brief Transforms an SDF using a 4x4 matrix.
      * Stores the inverse transform to map world points to local space.
+     * To maintain SDF bounds under non-uniform scale, we divide the local 
+     * distance by the maximum singular value (or maximum scale factor) 
+     * in the inverse transformation.
      */
-    class Transform : public SDF {
+    class Transform : public SDFNode<Transform> {
         SDFPtr sdf;
         Mat4 invMat;
         Scalar scaleFactor;
@@ -17,40 +22,45 @@ namespace Geom {
     public:
         Transform(SDFPtr s, const Mat4& m) : sdf(s) {
             invMat = m.inverse();
-            // Determine average scale from the matrix (rough estimate for distance correction)
-            // For uniform scale, it's exact.
-            Vec3 v(1, 0, 0);
-            Point3 p = m.transformPoint(Point3(0,0,0));
-            Point3 p1 = m.transformPoint(Point3(1,0,0));
-            scaleFactor = (p1 - p).length();
-        }
-
-        Scalar eval(const Point3& p) const override {
-            Point3 local = invMat.transformPoint(p);
-            return sdf->eval(local) * scaleFactor;
-        }
-
-        DualScalar evalD(const Point3D& p) const override {
-            // Manual transformation of Dual coordinates
-            DualScalar lx = p.x * invMat.m[0] + p.y * invMat.m[4] + p.z * invMat.m[8]  + invMat.m[12];
-            DualScalar ly = p.x * invMat.m[1] + p.y * invMat.m[5] + p.z * invMat.m[9]  + invMat.m[13];
-            DualScalar lz = p.x * invMat.m[2] + p.y * invMat.m[6] + p.z * invMat.m[10] + invMat.m[14];
             
-            return sdf->evalD(Point3D(lx, ly, lz)) * scaleFactor;
+            // To guarantee the distance bound for an SDF after a transform (especially non-uniform scale),
+            // the distance in world space is d_local / max_scale(invMat).
+            // This is a lower bound, making it a valid sign-correct approximation.
+            // max_scale(invMat) is the max singular value of the 3x3 rotational/scale part.
+            // A simple conservative estimate is the maximum length of the mapped basis vectors.
+            
+            Vec3 vx(invMat.m[0], invMat.m[1], invMat.m[2]);
+            Vec3 vy(invMat.m[4], invMat.m[5], invMat.m[6]);
+            Vec3 vz(invMat.m[8], invMat.m[9], invMat.m[10]);
+            
+            scaleFactor = std::max({vx.length(), vy.length(), vz.length()});
+            
+            // Note: If scaleFactor is 0, the matrix is singular. We protect against div by zero.
+            if(scaleFactor < EPSILON) scaleFactor = 1.0;
         }
 
-        Dual2Scalar evalD2(const Point3D2& p) const override {
-            // Manual transformation of Dual2 coordinates
-            Dual2Scalar lx = p.x * invMat.m[0] + p.y * invMat.m[4] + p.z * invMat.m[8]  + invMat.m[12];
-            Dual2Scalar ly = p.x * invMat.m[1] + p.y * invMat.m[5] + p.z * invMat.m[9]  + invMat.m[13];
-            Dual2Scalar lz = p.x * invMat.m[2] + p.y * invMat.m[6] + p.z * invMat.m[10] + invMat.m[14];
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            
+            T lx = p.x * static_cast<T>(invMat.m[0]) + p.y * static_cast<T>(invMat.m[4]) + p.z * static_cast<T>(invMat.m[8])  + static_cast<T>(invMat.m[12]);
+            T ly = p.x * static_cast<T>(invMat.m[1]) + p.y * static_cast<T>(invMat.m[5]) + p.z * static_cast<T>(invMat.m[9])  + static_cast<T>(invMat.m[13]);
+            T lz = p.x * static_cast<T>(invMat.m[2]) + p.y * static_cast<T>(invMat.m[6]) + p.z * static_cast<T>(invMat.m[10]) + static_cast<T>(invMat.m[14]);
 
-            return sdf->evalD2(Point3D2(lx, ly, lz)) * scaleFactor;
+            if constexpr (std::is_same_v<T, Scalar>) {
+                Point3 pt(lx, ly, lz);
+                return sdf->eval(pt) / static_cast<T>(scaleFactor);
+            } else if constexpr (std::is_same_v<T, DualScalar>) {
+                Point3D pt(lx, ly, lz);
+                return sdf->evalD(pt) / static_cast<T>(scaleFactor);
+            } else if constexpr (std::is_same_v<T, Dual2Scalar>) {
+                Point3D2 pt(lx, ly, lz);
+                return sdf->evalD2(pt) / static_cast<T>(scaleFactor);
+            }
+            return static_cast<T>(0);
         }
 
         BoundingBox boundingBox() const override {
             BoundingBox local = sdf->boundingBox();
-            // Transform 8 corners and find new min/max
             Point3 corners[8];
             Point3 min = local.min;
             Point3 max = local.max;
@@ -63,9 +73,6 @@ namespace Geom {
             corners[6] = Point3(min.x, max.y, max.z);
             corners[7] = Point3(max.x, max.y, max.z);
 
-            // Need to transform back to world (not using invMat)
-            // Let's store the forward matrix or just invert invMat (which might be costly)
-            // Better to pass both or re-invert.
             Mat4 forward = invMat.inverse(); 
             BoundingBox world;
             for (int i = 0; i < 8; ++i) {
