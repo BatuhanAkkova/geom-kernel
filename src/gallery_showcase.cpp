@@ -1,162 +1,92 @@
-#include "Primitives.h"
-#include "Booleans.h"
-#include "SmoothBooleans.h"
-#include "ShapeKernel.h"
-#include "Fields.h"
-#include "Modifiers.h"
-#include "MarchingCubes.h"
-#include "STLExporter.h"
-#include "Autodiff.h"
-#include "Optimization.h"
-#include "TopoOptimizer.h"
-#include "DensityField.h"
+#include "../include/Geometry.h"
+#include "../include/SDF.h"
+#include "../include/Primitives.h"
+#include "../include/Booleans.h"
+#include "../include/SmoothBooleans.h"
+#include "../include/Transform.h"
+#include "../include/TPMS.h"
+#include "../include/VoxelGrid.h"
+#include "../include/MarchingCubes.h"
+#include "../include/STLExporter.h"
 #include <iostream>
 #include <memory>
-#include <vector>
+#include <chrono>
 
 using namespace Geom;
 
-/**
- * @brief Gallery Showcase: Physics-Informed Design
- * Automated wall thickness driven by analytical physics.
- */
-void gallery_physics_vessel() {
-    std::cout << "Gallery [1/6]: Generating Physics-Informed Vessel..." << std::endl;
-    // Cylinder with field-driven offset (simulating pressure vessel thickness)
-    auto inner = std::make_shared<Cylinder>(Point3(0,0,0), 50.0, 200.0);
+void meshAndSave(SDFPtr sdf, const std::string& name, Scalar resolution = 0.5) {
+    std::cout << "--- " << name << " ---" << std::endl;
+    BoundingBox bounds = sdf->boundingBox();
     
-    // Constant thickness field of 5mm
-    auto thickness = std::make_shared<ConstantField>(5.0);
+    // If infinite, cap it
+    if (bounds.min.x == -INF) bounds.min = Point3(-20, -20, -20);
+    if (bounds.max.x == INF) bounds.max = Point3(20, 20, 20);
     
-    // Inflation by thickness
-    auto outer_surface = std::make_shared<FieldOffset>(inner, thickness);
-    
-    // Difference gives hollow shell
-    auto vessel = std::make_shared<Difference>(outer_surface, inner);
+    std::cout << "Meshing..." << std::endl;
+    auto start = std::chrono::high_resolution_clock::now();
     
     Mesh mesh;
-    BoundingBox bb = vessel->boundingBox();
-    MarchingCubes::march(*vessel, bb, 2.0, mesh);
-    STLExporter::save(mesh, "gallery_physics_vessel.stl");
-}
-
-/**
- * @brief Gallery Showcase: Smooth Junctions
- * High-fidelity blending between primitives.
- */
-void gallery_smooth_junctions() {
-    std::cout << "Gallery [2/6]: Generating Smooth Junctions..." << std::endl;
-    auto s1 = std::make_shared<Sphere>(Point3(-15, 0, 0), 20.0);
-    auto s2 = std::make_shared<Sphere>(Point3(15, 0, 0), 20.0);
+    MarchingCubes::march(*sdf, bounds, resolution, mesh);
     
-    // Smooth Union with 8mm blend radius
-    auto joined = std::make_shared<SmoothUnion>(s1, s2, 8.0);
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> diff = end - start;
     
-    Mesh mesh;
-    MarchingCubes::march(*joined, joined->boundingBox(), 1.0, mesh);
-    STLExporter::save(mesh, "gallery_smooth_junctions.stl");
-}
-
-/**
- * @brief Gallery Showcase: ShapeKernel Layer
- * High-level engineering primitives.
- */
-void gallery_ribbed_pipe() {
-    std::cout << "Gallery [3/6]: Generating Ribbed Pipe..." << std::endl;
-    using namespace Geom::ShapeKernel;
+    std::cout << "Generated " << mesh.triangles.size() << " triangles in " << diff.count() << "s" << std::endl;
     
-    auto pipe = std::make_shared<Pipe>(Point3(0, -50, 0), Point3(0, 50, 0), 10.0);
-    
-    // Add structural ribs
-    auto r1 = std::make_shared<StructuralRib>(pipe, Plane(Vec3(1,0,0), 0), 2.0, 5.0);
-    auto r2 = std::make_shared<StructuralRib>(r1, Plane(Vec3(0,0,1), 0), 2.0, 5.0);
-    
-    // Subtract cooling channel
-    auto channel = std::make_shared<Pipe>(Point3(0,-60,0), Point3(0,60,0), 6.0);
-    auto finalPipe = std::make_shared<CoolingChannel>(r2, channel);
-    
-    Mesh mesh;
-    MarchingCubes::march(*finalPipe, finalPipe->boundingBox(), 1.0, mesh);
-    STLExporter::save(mesh, "gallery_ribbed_pipe.stl");
-}
-
-/**
- * @brief Gallery Showcase: Topology Optimization
- * SIMP Densities bridged to SDF.
- */
-void gallery_topo_opt() {
-    std::cout << "Gallery [4/6]: Generating Topology Optimization Mesh..." << std::endl;
-    
-    // Mock a density grid (30x15x15)
-    TopoOptimizer::Config cfg{10, 5, 5, 0.4, 3.0, 1.5};
-    TopoOptimizer opt(cfg);
-    
-    // Normally we'd run iterations. For the gallery, we'll manually set some high-density zones
-    // to simulate a beam structure.
-    auto& rho = const_cast<std::vector<double>&>(opt.densities());
-    for(int i=0; i<rho.size(); ++i) rho[i] = 0.1; // void
-    
-    // Create a "support" and "load" connection
-    for(int i=0; i<10; ++i) rho[i] = 1.0; // Top edge
-    for(int i=0; i<5; ++i) rho[i*10] = 1.0; // Left side
-    
-    BoundingBox domain(Point3(0,0,0), Point3(100, 50, 50));
-    auto df = std::make_shared<DensityField>(rho, 10, 5, 5, domain, 0.5);
-    
-    Mesh mesh;
-    MarchingCubes::march(*df, domain, 2.0, mesh);
-    STLExporter::save(mesh, "gallery_topo_opt.stl");
-}
-
-/**
- * @brief Gallery Showcase: Space Warping
- * Nonlinear transformations (Twist).
- */
-void gallery_twisted_bar() {
-    std::cout << "Gallery [5/6]: Generating Twisted Bar..." << std::endl;
-    auto bar = std::make_shared<Box>(Point3(0,0,0), Vec3(10, 50, 10));
-    auto twisted = std::make_shared<Twist>(bar, 0.05); // 0.05 rad per unit Y
-    
-    Mesh mesh;
-    MarchingCubes::march(*twisted, twisted->boundingBox(), 1.0, mesh);
-    STLExporter::save(mesh, "gallery_twisted_bar.stl");
-}
-
-/**
- * @brief Gallery Showcase: Differentiable Geometry
- * Sensitivity analysis via Autodiff.
- */
-void gallery_sensitivity() {
-    std::cout << "Gallery [6/6]: Running Sensitivity Analysis..." << std::endl;
-    Point3 query(12, 0, 0);
-    Scalar radius = 10.0;
-    
-    auto sphere_model = [](Point3D p, DualScalar r) {
-        return p.length() - r;
-    };
-    
-    Scalar sens = Optimization::computeSensitivity(query, sphere_model, radius);
-    std::cout << "  Sensitivity of Sphere surface at (12,0,0) w.r.t Radius: " << sens << std::endl;
-    std::cout << "  (Exactly -1.0 as expected analytically)" << std::endl;
+    std::string filename = name + ".stl";
+    STLExporter::save(mesh, filename);
+    std::cout << "Saved to " << filename << "\n" << std::endl;
 }
 
 int main() {
-    std::cout << "--- GeomKernel Gallery Showcase ---" << std::endl;
-    
-    try {
-        gallery_physics_vessel();
-        gallery_smooth_junctions();
-        gallery_ribbed_pipe();
-        gallery_topo_opt();
-        gallery_twisted_bar();
-        gallery_sensitivity();
-        
-        std::cout << "\nAll gallery items generated successfully!" << std::endl;
-        std::cout << "STL files produced in current directory." << std::endl;
-    } catch (const std::exception& e) {
-        std::cerr << "Gallery generation failed: " << e.what() << std::endl;
-        return 1;
+    std::cout << "GeomKernel Gallery Showcase\n" << std::endl;
+
+    // 1. Gyroid Lattice Cube
+    {
+        auto box = std::make_shared<Box>(Point3(0,0,0), Vec3(10, 10, 10));
+        auto gyroid = std::make_shared<Gyroid>(5.0, 0.5); // Period 5, thickened
+        auto lattice = std::make_shared<Intersection>(box, gyroid);
+        meshAndSave(lattice, "gallery_gyroid_lattice", 0.25);
     }
-    
+
+    // 2. Smooth Torus Chain
+    {
+        auto t1 = std::make_shared<Torus>(Point3(0,0,0), 6.0, 1.5);
+        auto t2 = std::make_shared<Torus>(Point3(0,0,0), 6.0, 1.5);
+        auto rotated_t2 = rotateX(t2, M_PI / 2.0);
+        auto shifted_t2 = translate(rotated_t2, Vec3(6, 0, 0));
+        
+        auto chain = std::make_shared<SmoothUnion>(t1, shifted_t2, 1.5);
+        meshAndSave(chain, "gallery_smooth_chain", 0.2);
+    }
+
+    // 3. Voxelized Transformed Box
+    {
+        auto box = std::make_shared<Box>(Point3(0,0,0), Vec3(5, 5, 5));
+        auto rot_box = rotateZ(rotateY(box, 0.5), 0.5);
+        
+        std::cout << "Voxelizing Transformed Box..." << std::endl;
+        BoundingBox vb(Point3(-10, -10, -10), Point3(10, 10, 10));
+        auto grid = VoxelGrid::sampleSDF(*rot_box, vb, 64, 64, 64);
+        
+        // Wrap grid back into an SDF-like structure if needed, or just mesh from it
+        // Since we don't have a VoxelGridSDF yet, we can mesh it by treating it as a new discrete SDF
+        // For the showcase, let's just mesh the original transformed box to show it works
+        meshAndSave(rot_box, "gallery_transformed_box", 0.15);
+        
+        // Partial Volume Demo
+        Scalar pv = partialVolume(0.1, 0.5); // 0.1 dist, 0.5 voxel
+        std::cout << "Partial Volume at dist 0.1, voxel 0.5: " << pv << std::endl;
+    }
+
+    // 4. Diamond TPMS Ball
+    {
+        auto sphere = std::make_shared<Sphere>(Point3(0,0,0), 12.0);
+        auto diamond = std::make_shared<DiamondTPMS>(4.0, 0.0);
+        auto ball = std::make_shared<Intersection>(sphere, diamond);
+        meshAndSave(ball, "gallery_diamond_ball", 0.3);
+    }
+
+    std::cout << "Showcase Complete!" << std::endl;
     return 0;
 }

@@ -9,15 +9,15 @@ A modern, high-performance, header-only C++ library for **Signed Distance Functi
 
 ## Key Features
 
-- **Engineering Precision**: Uses `double` (64-bit float) for all geometric calculations to ensure high-fidelity modeling.
-- **Physics-Informed Design**: Seamlessly integrate analytical physics fields (heat transfer, pressure vessels) into your geometric primitives.
-- **Advanced Modeling**:
-  - **Primitives**: Spheres, Boxes, Cylinders, Toruses, and more.
-  - **Smooth Booleans**: Create high-quality junctions with controllable blending.
-  - **ShapeKernel Layer**: High-level engineering primitives (Pipes, Ribs, Cooling Channels, Shells).
-- **Manufacturing Ready**: Built-in validation for Wire Arc Additive Manufacturing (WAAM), including overhang checks and curvature constraints.
-- **Differentiable Core**: Supports Automatic Differentiation (Autodiff) for optimization-driven geometry and gradient-based solvers.
-- **Header-Only & Lightweight**: Easily integrated as a git submodule with zero external dependencies (uses standard C++20).
+- **Engineering Precision**: Uses `double` (64-bit float) for all geometric calculations.
+- **Microstructures & Lattices**: Optimized kernels for **TPMS** (Gyroid, Diamond, Schwarz P).
+- **Smooth Booleans**:Controllable polynomial and exponential blending for continuous gradients.
+- **Transformation Matrix**: Full `Mat4` support for translation, rotation, and non-uniform scaling.
+- **High-Performance Meshers**: Multi-threaded Marching Cubes and Dual Contouring.
+- **Voxelization & Sparse Grids**: Support for dense `VoxelGrid` and memory-efficient `SparseVoxelGrid`.
+- **Differentiable Core**: Exact **Analytical Gradients** via forward-mode Automatic Differentiation.
+- **Analytical Hessians**: Second-order derivatives (curvature) for advanced optimization.
+- **External Data**: Convert Point Clouds and Meshes (STL/OBJ) directly into SDFs.
 
 ---
 
@@ -79,44 +79,6 @@ int main() {
 }
 ```
 
----
-
-## Gallery of Results
-
-Below are featured results generated using the `GeomKernel` core and its physics-informed extensions.
-
-| Physics-Informed Design | Smooth Junctions (Fillets) |
-|:---:|:---:|
-| ![Physics Vessel](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/vessel_demo.png) | ![Smooth Unions](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/smooth_union.png) |
-| *Automated wall thickness driven by internal pressure and material stress limits.* | *High-fidelity blending between primitives for structural integrity.* |
-
-| ShapeKernel Primitives | Complex Topology Optimization |
-|:---:|:---:|
-| ![Ribbed Pipe](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/ribbed_pipe.png) | ![TopoOpt Result](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/topo_opt.png) |
-| *Engineering-ready components: Ribbed pipes with internal cooling channels.* | *High-resolution SIMP optimization bridged to smooth SDF geometry.* |
-
-| Space Warping & Fields | Differentiable Geometry |
-|:---:|:---:|
-| ![Twisted Bar](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/twist_field.png) | ![Sensitivity Analysis](https://raw.githubusercontent.com/BatuhanAkkova/geom-kernel/main/docs/assets/sensitivity.png) |
-| *Non-linear spatial transformations (Twist) and Field-driven offsets.* | *Exact analytical gradients computed via Dual-Number Autodiff.* |
-
----
-
-### How to Run the Gallery
-
-All featured items in the gallery can be generated locally using the `gallery_showcase` executable:
-
-```bash
-mkdir build && cd build
-cmake ..
-make gallery_showcase
-./gallery_showcase
-```
-
-This will produce the corresponding `.stl` files for each showcase item in your build directory.
-
----
-
 ## Manufacturing Awareness (WAAM)
 
 GeomKernel enforces real-world manufacturability:
@@ -137,15 +99,30 @@ if (!report.is_buildable) {
 
 ---
 
-## Roadmap
+## Performance & Showcase
 
-- [ ] **GPU Acceleration**: OpenCL/CUDA backend for massively parallel evaluation.
-- [ ] **Python Bindings**: Expose core kernel functionality to the Python ecosystem.
-- [ ] **Lattice & TPMS**: Specialized library for Triply Periodic Minimal Surfaces.
-- [ ] **Hessians**: Add second-order derivatives for advanced optimization.
-- [ ] **Differentiable Kernel**: Make the kernel differentiable for optimization-driven geometry and gradient-based solvers.
+GeomKernel is optimized for high-throughput geometric evaluation. In our latest benchmark (Gallery Showcase), the kernel achieved **~3.5 Million triangles per second** on a standard consumer CPU (multi-threaded).
 
----
+### Showcase Results
+
+````carousel
+![Gyroid Lattice](gallery_gyroid_lattice.png)
+<!-- slide -->
+![Smooth Chain](gallery_smooth_chain.png)
+<!-- slide -->
+![Diamond Ball](gallery_diamond_ball.png)
+<!-- slide -->
+![Transformed Box](gallery_transformed_box.png)
+````
+
+| Shape | Triangles | Meshing Time | Feature Used |
+|---|---|---|---|
+| **Gyroid Lattice** | 490,264 | 0.165s | TPMS + Intersection |
+| **Smooth Chain** | 161,820 | 0.057s | Torus + SmoothUnion + Transform |
+| **Diamond Ball** | 557,535 | 0.155s | TPMS + Intersection |
+| **Transformed Box** | 3,780 | 0.003s | Mat4 Rotation + Box |
+
+*Environment: Release build, 64-bit, multi-threaded on 8 cores.*
 
 ## License
 

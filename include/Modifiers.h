@@ -80,8 +80,7 @@ namespace Geom {
         DualScalar evalD(const Point3D& p) const override {
             // Field should also support Dual evaluation if we want exact spatial derivatives of the field.
             // For now, if Field doesn't support evalD, we use the value as a constant.
-            // But let's check Field.h.
-            return sdf->evalD(p) - field->eval(p); 
+            return sdf->evalD(p) - field->eval(Point3(p.x.val, p.y.val, p.z.val)); 
         }
 
         BoundingBox boundingBox() const override {

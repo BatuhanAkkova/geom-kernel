@@ -23,6 +23,13 @@ namespace Geom {
             return sqrt(dx*dx + dy*dy + dz*dz) - radius;
         }
 
+        Dual2Scalar evalD2(const Point3D2& p) const override {
+            Dual2Scalar dx = p.x - center.x;
+            Dual2Scalar dy = p.y - center.y;
+            Dual2Scalar dz = p.z - center.z;
+            return sqrt(dx*dx + dy*dy + dz*dz) - radius;
+        }
+
         BoundingBox boundingBox() const override {
             Vec3 r(radius, radius, radius);
             return BoundingBox(center - r, center + r);
@@ -59,6 +66,20 @@ namespace Geom {
             DualScalar outside_dist = sqrt(u*u + v*v + w*w);
 
             DualScalar inside_dist = min(max(qx, max(qy, qz)), 0.0);
+            return outside_dist + inside_dist;
+        }
+
+        Dual2Scalar evalD2(const Point3D2& p) const override {
+            Dual2Scalar qx = abs(p.x - center.x) - bounds.x;
+            Dual2Scalar qy = abs(p.y - center.y) - bounds.y;
+            Dual2Scalar qz = abs(p.z - center.z) - bounds.z;
+
+            Dual2Scalar u = max(qx, 0.0);
+            Dual2Scalar v = max(qy, 0.0);
+            Dual2Scalar w = max(qz, 0.0);
+            Dual2Scalar outside_dist = sqrt(u*u + v*v + w*w);
+
+            Dual2Scalar inside_dist = min(max(qx, max(qy, qz)), 0.0);
             return outside_dist + inside_dist;
         }
 
@@ -104,12 +125,65 @@ namespace Geom {
             return sqrt(u*u + v*v) + w;
         }
 
+        Dual2Scalar evalD2(const Point3D2& p) const override {
+            Dual2Scalar lx = p.x - center.x;
+            Dual2Scalar ly = p.y - center.y;
+            Dual2Scalar lz = p.z - center.z;
+
+            Dual2Scalar x = sqrt(lx*lx + ly*ly) - radius;
+            Dual2Scalar y = abs(lz) - height * 0.5;
+
+            Dual2Scalar u = max(x, 0.0);
+            Dual2Scalar v = max(y, 0.0);
+            Dual2Scalar w = min(max(x, y), 0.0);
+
+            return sqrt(u*u + v*v) + w;
+        }
+
         BoundingBox boundingBox() const override {
             Vec3 half_size(radius, radius, height * 0.5);
             return BoundingBox(center - half_size, center + half_size);
         }
     };
     
+    class Torus : public SDF {
+    public:
+        Point3 center;
+        Scalar R; // Major radius
+        Scalar r; // Minor radius
+
+        Torus(Point3 c, Scalar majorR, Scalar minorR) : center(c), R(majorR), r(minorR) {}
+
+        Scalar eval(const Point3& p) const override {
+            Point3 local = p - center;
+            Scalar xz_dist = std::sqrt(local.x * local.x + local.z * local.z) - R;
+            return std::sqrt(xz_dist * xz_dist + local.y * local.y) - r;
+        }
+
+        DualScalar evalD(const Point3D& p) const override {
+            DualScalar lx = p.x - center.x;
+            DualScalar ly = p.y - center.y;
+            DualScalar lz = p.z - center.z;
+
+            DualScalar xz_dist = sqrt(lx*lx + lz*lz) - R;
+            return sqrt(xz_dist*xz_dist + ly*ly) - r;
+        }
+
+        Dual2Scalar evalD2(const Point3D2& p) const override {
+            Dual2Scalar lx = p.x - center.x;
+            Dual2Scalar ly = p.y - center.y;
+            Dual2Scalar lz = p.z - center.z;
+
+            Dual2Scalar xz_dist = sqrt(lx*lx + lz*lz) - R;
+            return sqrt(xz_dist*xz_dist + ly*ly) - r;
+        }
+
+        BoundingBox boundingBox() const override {
+            Vec3 range(R + r, r, R + r);
+            return BoundingBox(center - range, center + range);
+        }
+    };
+
     class Plane : public SDF {
     public:
         Vec3 normal;
@@ -122,6 +196,10 @@ namespace Geom {
         }
 
         DualScalar evalD(const Point3D& p) const override {
+            return p.x * normal.x + p.y * normal.y + p.z * normal.z + d;
+        }
+
+        Dual2Scalar evalD2(const Point3D2& p) const override {
             return p.x * normal.x + p.y * normal.y + p.z * normal.z + d;
         }
 

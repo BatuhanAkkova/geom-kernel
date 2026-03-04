@@ -14,36 +14,85 @@ namespace Geom {
         T val;
         T der;
 
-        constexpr Dual(T v = 0) : val(v), der(0) {}
+        constexpr Dual(T v = 0) : val(v), der(static_cast<T>(0)) {}
         constexpr Dual(T v, T d) : val(v), der(d) {}
 
-        static Dual variable(T v) { return Dual(v, 1); }
+        static Dual variable(T v) { return Dual(v, static_cast<T>(1)); }
+        static Dual constant(T v) { return Dual(v, static_cast<T>(0)); }
 
-        Dual operator+(const Dual& other) const { return {val + other.val, der + other.der}; }
-        Dual operator-(const Dual& other) const { return {val - other.val, der - other.der}; }
-        Dual operator*(const Dual& other) const { 
-            return {val * other.val, val * other.der + der * other.val}; 
+        // Binary operators with other Duals
+        template <typename U>
+        auto operator+(const Dual<U>& other) const { return Dual<decltype(val + other.val)>(val + other.val, der + other.der); }
+        template <typename U>
+        auto operator-(const Dual<U>& other) const { return Dual<decltype(val - other.val)>(val - other.val, der - other.der); }
+        template <typename U>
+        auto operator*(const Dual<U>& other) const { 
+            return Dual<decltype(val * other.val)>(val * other.val, val * other.der + der * other.val); 
         }
-        Dual operator/(const Dual& other) const {
-            return {val / other.val, (der * other.val - val * other.der) / (other.val * other.val)};
-        }
-
-        Dual operator+(T s) const { return {val + s, der}; }
-        Dual operator-(T s) const { return {val - s, der}; }
-        Dual operator*(T s) const { return {val * s, der * s}; }
-        Dual operator/(T s) const { return {val / s, der / s}; }
-
-        friend Dual operator+(T s, const Dual& d) { return d + s; }
-        friend Dual operator-(T s, const Dual& d) { return Dual(s - d.val, -d.der); }
-        friend Dual operator*(T s, const Dual& d) { return d * s; }
-        friend Dual operator/(T s, const Dual& d) { 
-            return Dual(s / d.val, -s * d.der / (d.val * d.val)); 
+        template <typename U>
+        auto operator/(const Dual<U>& other) const {
+            auto v = val / other.val;
+            return Dual<decltype(v)>(v, (der * other.val - val * other.der) / (other.val * other.val));
         }
 
-        bool operator<(const Dual& other) const { return val < other.val; }
-        bool operator>(const Dual& other) const { return val > other.val; }
-        bool operator<=(const Dual& other) const { return val <= other.val; }
-        bool operator>=(const Dual& other) const { return val >= other.val; }
+        // Binary operators with Scalars/Types
+        template <typename U>
+        auto operator+(U s) const { return Dual<T>(val + s, der); }
+        template <typename U>
+        auto operator-(U s) const { return Dual<T>(val - s, der); }
+        template <typename U>
+        auto operator*(U s) const { return Dual<T>(val * s, der * s); }
+        template <typename U>
+        auto operator/(U s) const { return Dual<T>(val / s, der / s); }
+
+        template <typename U>
+        friend auto operator+(U s, const Dual& d) { return d + s; }
+        template <typename U>
+        friend auto operator-(U s, const Dual& d) { return Dual<T>(s - d.val, -d.der); }
+        template <typename U>
+        friend auto operator*(U s, const Dual& d) { return d * s; }
+        template <typename U>
+        friend auto operator/(U s, const Dual& d) { 
+            return Dual<T>(s / d.val, -static_cast<T>(s) * d.der / (d.val * d.val)); 
+        }
+
+        Dual operator-() const { return {-val, -der}; }
+
+        // Comparison
+        template <typename U>
+        bool operator<(const Dual<U>& o) const { return val < o.val; }
+        template <typename U>
+        bool operator>(const Dual<U>& o) const { return val > o.val; }
+        template <typename U>
+        bool operator<=(const Dual<U>& o) const { return val <= o.val; }
+        template <typename U>
+        bool operator>=(const Dual<U>& o) const { return val >= o.val; }
+        template <typename U>
+        bool operator==(const Dual<U>& o) const { return val == o.val; }
+        template <typename U>
+        bool operator!=(const Dual<U>& o) const { return val != o.val; }
+
+        template <typename U>
+        bool operator<(U s) const { return val < s; }
+        template <typename U>
+        bool operator>(U s) const { return val > s; }
+        template <typename U>
+        bool operator<=(U s) const { return val <= s; }
+        template <typename U>
+        bool operator>=(U s) const { return val >= s; }
+        template <typename U>
+        bool operator==(U s) const { return val == s; }
+        template <typename U>
+        bool operator!=(U s) const { return val != s; }
+
+        template <typename U>
+        friend bool operator<(U s, const Dual& d) { return s < d.val; }
+        template <typename U>
+        friend bool operator>(U s, const Dual& d) { return s > d.val; }
+        template <typename U>
+        friend bool operator<=(U s, const Dual& d) { return s <= d.val; }
+        template <typename U>
+        friend bool operator>=(U s, const Dual& d) { return s >= d.val; }
     };
 
     /**
@@ -74,35 +123,75 @@ namespace Geom {
     using Point3D = Vec3T<DualScalar>;
     using Vec3D = Vec3T<DualScalar>;
 
-    // Math functions for Dual
+    // Second order AD types
+    using Dual2Scalar = Dual<DualScalar>;
+    using Point3D2 = Vec3T<Dual2Scalar>;
+
+    // Math functions for Dual (Generic templates)
     template <typename T>
-    Dual<T> sqrt(const Dual<T>& d) {
-        T s = std::sqrt(d.val);
-        return {s, d.der / (static_cast<T>(2) * s)};
+    auto sqrt(const Dual<T>& d) {
+        using std::sqrt;
+        auto s = sqrt(d.val);
+        return Dual<decltype(s)>(s, d.der / (static_cast<decltype(s)>(2) * s));
     }
 
     template <typename T>
-    Dual<T> abs(const Dual<T>& d) {
-        return {std::abs(d.val), d.val >= 0 ? d.der : -d.der};
+    auto abs(const Dual<T>& d) {
+        using std::abs;
+        auto v = abs(d.val);
+        return Dual<decltype(v)>(v, d.val >= 0 ? d.der : -d.der);
     }
 
-    template <typename T>
-    Dual<T> max(const Dual<T>& a, const Dual<T>& b) {
+    template <typename T, typename U>
+    auto max(const Dual<T>& a, const Dual<U>& b) {
         return a.val > b.val ? a : b;
     }
 
-    template <typename T>
-    Dual<T> min(const Dual<T>& a, const Dual<T>& b) {
+    template <typename T, typename U>
+    auto min(const Dual<T>& a, const Dual<U>& b) {
         return a.val < b.val ? a : b;
     }
 
-    template <typename T>
-    Dual<T> max(const Dual<T>& a, T b) {
-        return a.val > b ? a : Dual<T>(b, 0);
+    template <typename T, typename U>
+    auto max(const Dual<T>& a, U b) {
+        return a.val > b ? a : Dual<T>(static_cast<T>(b), static_cast<T>(0));
+    }
+
+    template <typename T, typename U>
+    auto min(const Dual<T>& a, U b) {
+        return a.val < b ? a : Dual<T>(static_cast<T>(b), static_cast<T>(0));
     }
 
     template <typename T>
-    Dual<T> min(const Dual<T>& a, T b) {
-        return a.val < b ? a : Dual<T>(b, 0);
+    auto sin(const Dual<T>& d) {
+        using std::sin; using std::cos;
+        return Dual<decltype(sin(d.val))>(sin(d.val), d.der * cos(d.val));
     }
+
+    template <typename T>
+    auto cos(const Dual<T>& d) {
+        using std::sin; using std::cos;
+        return Dual<decltype(cos(d.val))>(cos(d.val), -d.der * sin(d.val));
+    }
+
+    template <typename T, typename S>
+    auto pow(const Dual<T>& d, S p) {
+        using std::pow;
+        auto v = pow(d.val, p);
+        return Dual<decltype(v)>(v, static_cast<decltype(v)>(p) * pow(d.val, p - 1) * d.der);
+    }
+
+    /**
+     * @brief Enzyme AD Hooks Documentation
+     * 
+     * To use Enzyme (https://enzyme.mit.edu) for reverse-mode AD:
+     * 1. Structure SDF::eval as a leaf function.
+     * 2. Use __enzyme_autodiff<double>(SDF::eval, ...) to generate gradients.
+     * 
+     * Example:
+     * extern double __enzyme_autodiff(void*, ...);
+     * double grad_p[3];
+     * __enzyme_autodiff((void*)my_sdf_eval, enzyme_dup, p, grad_p);
+     */
+    struct EnzymeHook {};
 }

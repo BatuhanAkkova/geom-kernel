@@ -47,7 +47,10 @@ target_link_libraries(phase7_test PRIVATE GeomKernel)
 add_executable(phase8_test src/phase8_test.cpp)
 target_link_libraries(phase8_test PRIVATE GeomKernel)
 
+# Refactor Test
+add_executable(refactor_test src/refactor_test.cpp)
+target_link_libraries(refactor_test PRIVATE GeomKernel)
+
 # Gallery Showcase
 add_executable(gallery_showcase src/gallery_showcase.cpp)
 target_link_libraries(gallery_showcase PRIVATE GeomKernel)
-
