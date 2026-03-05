@@ -39,6 +39,20 @@ namespace Geom {
             else if(i==2) center.z = val;
             else if(i==3) radius = val;
         }
+
+        DualScalar evalParamD(const Point3& p, size_t paramIndex) const override {
+            // center x,y,z (0, 1, 2)
+            // radius (3)
+            DualScalar cx(center.x, paramIndex == 0 ? 1.0 : 0.0);
+            DualScalar cy(center.y, paramIndex == 1 ? 1.0 : 0.0);
+            DualScalar cz(center.z, paramIndex == 2 ? 1.0 : 0.0);
+            DualScalar r(radius, paramIndex == 3 ? 1.0 : 0.0);
+
+            Vec3T<DualScalar> tc(cx, cy, cz);
+            Vec3T<DualScalar> tp(DualScalar::constant(p.x), DualScalar::constant(p.y), DualScalar::constant(p.z));
+
+            return (tp - tc).length() - r;
+        }
     };
 
     class Box : public SDFNode<Box> {
