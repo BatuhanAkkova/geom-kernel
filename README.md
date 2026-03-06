@@ -121,11 +121,6 @@ GeomKernel is optimized for high-throughput geometric evaluation. In our latest 
 | ![Dual Contouring](assets/dual_contouring.png) | ![Smooth Junction](assets/junction.png) |
 | *Sharp Feature Preservation* | *SDF Smooth Junction* |
 
-### Legacy Gallery
-| ![Gyroid Lattice](gallery_gyroid_lattice.png) | ![Smooth Chain](gallery_smooth_chain.png) | ![Diamond Ball](gallery_diamond_ball.png) | ![Transformed Box](gallery_transformed_box.png) |
-|---|---|---|---|
-| *Gyroid + Box* | *Smooth Chain* | *Diamond + Sphere* | *Transformed Box* |
-
 ### Performance Table
 | Shape | Triangles | Meshing Time | Feature Used |
 |---|---|---|---|
