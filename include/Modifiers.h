@@ -19,6 +19,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return sdf->eval(pt) - r;
@@ -52,6 +53,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return std::abs(sdf->eval(pt)) - thickness;
@@ -84,6 +86,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return sdf->eval(pt) - field->eval(pt);
@@ -118,6 +121,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Scalar c = std::cos(k * p.y);
                 Scalar s = std::sin(k * p.y);

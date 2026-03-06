@@ -20,44 +20,65 @@ namespace Geom {
     constexpr Scalar EPSILON = 1e-6;
     constexpr Scalar INF = std::numeric_limits<Scalar>::infinity();
 
-    struct Vec3 {
-        Scalar x, y, z;
+    template <typename T>
+    struct Vec3T {
+        T x, y, z;
 
-        constexpr Vec3() : x(0), y(0), z(0) {}
-        constexpr Vec3(Scalar x, Scalar y, Scalar z) : x(x), y(y), z(z) {}
+        constexpr Vec3T() : x(0), y(0), z(0) {}
+        constexpr Vec3T(T x, T y, T z) : x(x), y(y), z(z) {}
 
-        Vec3 operator+(const Vec3& other) const { return {x + other.x, y + other.y, z + other.z}; }
-        Vec3 operator-(const Vec3& other) const { return {x - other.x, y - other.y, z - other.z}; }
-        Vec3 operator*(Scalar s) const { return {x * s, y * s, z * s}; }
-        Vec3 operator/(Scalar s) const { return {x / s, y / s, z / s}; }
-
-        Vec3& operator+=(const Vec3& other) { x += other.x; y += other.y; z += other.z; return *this; }
-        Vec3& operator-=(const Vec3& other) { x -= other.x; y -= other.y; z -= other.z; return *this; }
-        Vec3& operator*=(Scalar s) { x *= s; y *= s; z *= s; return *this; }
-        Vec3& operator/=(Scalar s) { x /= s; y /= s; z /= s; return *this; }
-
-        Scalar dot(const Vec3& other) const { return x * other.x + y * other.y + z * other.z; }
+        Vec3T operator+(const Vec3T& other) const { return {x + other.x, y + other.y, z + other.z}; }
+        Vec3T operator-(const Vec3T& other) const { return {x - other.x, y - other.y, z - other.z}; }
         
-        Scalar lengthSquared() const { return x * x + y * y + z * z; }
-        Scalar length() const { return std::sqrt(lengthSquared()); }
+        template <typename S>
+        Vec3T operator*(S s) const { return {x * s, y * s, z * s}; }
+        
+        template <typename S>
+        Vec3T operator/(S s) const { return {x / s, y / s, z / s}; }
 
-        Vec3 normalized() const {
-            Scalar len = length();
-            return (len > EPSILON) ? *this / len : Vec3(0, 0, 0);
+        Vec3T& operator+=(const Vec3T& other) { x += other.x; y += other.y; z += other.z; return *this; }
+        Vec3T& operator-=(const Vec3T& other) { x -= other.x; y -= other.y; z -= other.z; return *this; }
+        
+        template <typename S>
+        Vec3T& operator*=(S s) { x *= s; y *= s; z *= s; return *this; }
+        
+        template <typename S>
+        Vec3T& operator/=(S s) { x /= s; y /= s; z /= s; return *this; }
+
+        T dot(const Vec3T& other) const { return x * other.x + y * other.y + z * other.z; }
+        
+        T lengthSquared() const { return x * x + y * y + z * z; }
+        T length() const { 
+            using std::sqrt; 
+            T lsq = lengthSquared();
+            if constexpr (std::is_same_v<T, Scalar>) {
+                return sqrt(lsq);
+            } else {
+                // Protect against zero length causing NaN in gradients for AD types
+                // We use a safe threshold for the dual value
+                return lsq.val > 1e-12 ? sqrt(lsq) : T(0); 
+            }
         }
 
-        Scalar operator[](int i) const {
+        Vec3T normalized() const {
+            T len = length();
+            return (len > static_cast<T>(EPSILON)) ? *this / len : Vec3T(0, 0, 0);
+        }
+
+        T operator[](int i) const {
             if (i == 0) return x;
             if (i == 1) return y;
             return z;
         }
 
-        Scalar& operator[](int i) {
+        T& operator[](int i) {
             if (i == 0) return x;
             if (i == 1) return y;
             return z;
         }
     };
+
+    using Vec3 = Vec3T<Scalar>;
 
     /**
      * @brief 3x3 Matrix for Hessians and small transforms.
@@ -94,11 +115,11 @@ namespace Geom {
     using Point3 = Vec3;
 
     inline Vec3 min(const Vec3& a, const Vec3& b) {
-        return {std::min(a.x, b.x), std::min(a.y, b.y), std::min(a.z, b.z)};
+        return { (a.x < b.x ? a.x : b.x), (a.y < b.y ? a.y : b.y), (a.z < b.z ? a.z : b.z) };
     }
 
     inline Vec3 max(const Vec3& a, const Vec3& b) {
-        return {std::max(a.x, b.x), std::max(a.y, b.y), std::max(a.z, b.z)};
+        return { (a.x > b.x ? a.x : b.x), (a.y > b.y ? a.y : b.y), (a.z > b.z ? a.z : b.z) };
     }
 
     inline Vec3 operator*(Scalar s, const Vec3& v) {

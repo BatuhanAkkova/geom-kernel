@@ -14,6 +14,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             Vec3T<T> tc(static_cast<T>(center.x), static_cast<T>(center.y), static_cast<T>(center.z));
             return (p - tc).length() - static_cast<T>(radius);
         }
@@ -64,6 +65,8 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             T tc_x = static_cast<T>(center.x);
             T tc_y = static_cast<T>(center.y);
             T tc_z = static_cast<T>(center.z);
@@ -72,35 +75,17 @@ namespace Geom {
             T tb_y = static_cast<T>(bounds.y);
             T tb_z = static_cast<T>(bounds.z);
             
-            T qx, qy, qz;
-            if constexpr (std::is_same_v<T, Scalar>) {
-                qx = std::abs(p.x - tc_x) - tb_x;
-                qy = std::abs(p.y - tc_y) - tb_y;
-                qz = std::abs(p.z - tc_z) - tb_z;
-            } else {
-                qx = abs(p.x - tc_x) - tb_x;
-                qy = abs(p.y - tc_y) - tb_y;
-                qz = abs(p.z - tc_z) - tb_z;
-            }
+            T qx = abs(p.x - tc_x) - tb_x;
+            T qy = abs(p.y - tc_y) - tb_y;
+            T qz = abs(p.z - tc_z) - tb_z;
 
             T u, v, w, inside_dist, outside_dist;
-            if constexpr (std::is_same_v<T, Scalar>) {
-                u = std::max(qx, static_cast<T>(0.0));
-                v = std::max(qy, static_cast<T>(0.0));
-                w = std::max(qz, static_cast<T>(0.0));
-                inside_dist = std::min(std::max(qx, std::max(qy, qz)), static_cast<T>(0.0));
-            } else {
-                u = max(qx, static_cast<T>(0.0));
-                v = max(qy, static_cast<T>(0.0));
-                w = max(qz, static_cast<T>(0.0));
-                inside_dist = min(max(qx, max(qy, qz)), static_cast<T>(0.0));
-            }
+            u = max(qx, static_cast<T>(0.0));
+            v = max(qy, static_cast<T>(0.0));
+            w = max(qz, static_cast<T>(0.0));
+            inside_dist = min(max(qx, max(qy, qz)), static_cast<T>(0.0));
             
-            if constexpr (std::is_same_v<T, Scalar>) {
-                outside_dist = std::sqrt(u*u + v*v + w*w);
-            } else {
-                outside_dist = sqrt(u*u + v*v + w*w);
-            }
+            outside_dist = sqrt(u*u + v*v + w*w);
             
             return outside_dist + inside_dist;
         }
@@ -141,6 +126,8 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             T tc_x = static_cast<T>(center.x);
             T tc_y = static_cast<T>(center.y);
             T tc_z = static_cast<T>(center.z);
@@ -150,30 +137,15 @@ namespace Geom {
             T lz = p.z - tc_z;
 
             T x, y;
-            if constexpr (std::is_same_v<T, Scalar>) {
-                x = std::sqrt(lx*lx + ly*ly) - static_cast<T>(radius);
-                y = std::abs(lz) - static_cast<T>(height * 0.5);
-            } else {
-                x = sqrt(lx*lx + ly*ly) - static_cast<T>(radius);
-                y = abs(lz) - static_cast<T>(height * 0.5);
-            }
+            x = sqrt(lx*lx + ly*ly) - static_cast<T>(radius);
+            y = abs(lz) - static_cast<T>(height * 0.5);
 
             T u, v, w;
-            if constexpr (std::is_same_v<T, Scalar>) {
-                u = std::max(x, static_cast<T>(0.0));
-                v = std::max(y, static_cast<T>(0.0));
-                w = std::min(std::max(x, y), static_cast<T>(0.0));
-            } else {
-                u = max(x, static_cast<T>(0.0));
-                v = max(y, static_cast<T>(0.0));
-                w = min(max(x, y), static_cast<T>(0.0));
-            }
+            u = max(x, static_cast<T>(0.0));
+            v = max(y, static_cast<T>(0.0));
+            w = min(max(x, y), static_cast<T>(0.0));
 
-            if constexpr (std::is_same_v<T, Scalar>) {
-                return std::sqrt(u*u + v*v) + w;
-            } else {
-                return sqrt(u*u + v*v) + w;
-            }
+            return sqrt(u*u + v*v) + w;
         }
 
         BoundingBox boundingBox() const override {
@@ -211,6 +183,8 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             T tc_x = static_cast<T>(center.x);
             T tc_y = static_cast<T>(center.y);
             T tc_z = static_cast<T>(center.z);
@@ -262,6 +236,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             return p.x * static_cast<T>(normal.x) + 
                    p.y * static_cast<T>(normal.y) + 
                    p.z * static_cast<T>(normal.z) + static_cast<T>(d);

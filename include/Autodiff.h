@@ -2,6 +2,7 @@
 
 #include "Geometry.h"
 #include <cmath>
+#include <type_traits>
 
 namespace Geom {
 
@@ -35,7 +36,7 @@ namespace Geom {
             return Dual<decltype(v)>(v, (der * other.val - val * other.der) / (other.val * other.val));
         }
 
-        // Binary operators with Scalars/Types
+        // Basic arithmetic
         template <typename U>
         auto operator+(U s) const { return Dual<T>(val + s, der); }
         template <typename U>
@@ -46,13 +47,19 @@ namespace Geom {
         auto operator/(U s) const { return Dual<T>(val / s, der / s); }
 
         template <typename U>
-        friend auto operator+(U s, const Dual& d) { return d + s; }
+        friend auto operator+(U s, const Dual& d) -> std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, Scalar>, Dual<T>> { 
+            return d + s; 
+        }
         template <typename U>
-        friend auto operator-(U s, const Dual& d) { return Dual<T>(s - d.val, -d.der); }
+        friend auto operator-(U s, const Dual& d) -> std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, Scalar>, Dual<T>> { 
+            return Dual<T>(s - d.val, -d.der); 
+        }
         template <typename U>
-        friend auto operator*(U s, const Dual& d) { return d * s; }
+        friend auto operator*(U s, const Dual& d) -> std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, Scalar>, Dual<T>> { 
+            return d * s; 
+        }
         template <typename U>
-        friend auto operator/(U s, const Dual& d) { 
+        friend auto operator/(U s, const Dual& d) -> std::enable_if_t<std::is_arithmetic_v<U> || std::is_same_v<U, Scalar>, Dual<T>> { 
             return Dual<T>(s / d.val, -static_cast<T>(s) * d.der / (d.val * d.val)); 
         }
 
@@ -95,38 +102,6 @@ namespace Geom {
         friend bool operator>=(U s, const Dual& d) { return s >= d.val; }
     };
 
-    /**
-     * @brief Differentiable 3D Vector.
-     */
-    template <typename T>
-    struct Vec3T {
-        T x, y, z;
-
-        constexpr Vec3T() : x(0), y(0), z(0) {}
-        constexpr Vec3T(T x, T y, T z) : x(x), y(y), z(z) {}
-
-        Vec3T operator+(const Vec3T& other) const { return {x + other.x, y + other.y, z + other.z}; }
-        Vec3T operator-(const Vec3T& other) const { return {x - other.x, y - other.y, z - other.z}; }
-        
-        template <typename S>
-        Vec3T operator*(S s) const { return {x * s, y * s, z * s}; }
-        
-        template <typename S>
-        Vec3T operator/(S s) const { return {x / s, y / s, z / s}; }
-
-        T dot(const Vec3T& other) const { return x * other.x + y * other.y + z * other.z; }
-        T lengthSquared() const { return x * x + y * y + z * z; }
-        T length() const { 
-            using std::sqrt; 
-            T lsq = lengthSquared();
-            // Protect against zero length causing NaN in gradients
-            if constexpr (std::is_same_v<T, Scalar>) {
-                return sqrt(lsq);
-            } else {
-                return lsq.val > 1e-12 ? sqrt(lsq) : T(0); 
-            }
-        }
-    };
 
     using DualScalar = Dual<Scalar>;
     using Point3D = Vec3T<DualScalar>;
@@ -136,61 +111,107 @@ namespace Geom {
     using Dual2Scalar = Dual<DualScalar>;
     using Point3D2 = Vec3T<Dual2Scalar>;
 
-    // Math functions for Dual (Generic templates)
-    template <typename T>
-    auto sqrt(const Dual<T>& d) {
-        using std::sqrt;
+    // Math functions for DualScalar (First-order AD)
+    inline DualScalar sqrt(const DualScalar& d) {
         using std::sqrt;
         auto s = sqrt(d.val);
-        // Avoid division by zero when val is exactly 0
-        if (s == 0) return Dual<decltype(s)>(0, 0); 
-        return Dual<decltype(s)>(s, d.der / (static_cast<decltype(s)>(2) * s));
+        if (s == 0) return DualScalar(0, 0); 
+        return DualScalar(s, d.der / (2.0 * s));
     }
 
-    template <typename T>
-    auto abs(const Dual<T>& d) {
+    inline DualScalar abs(const DualScalar& d) {
         using std::abs;
         auto v = abs(d.val);
-        return Dual<decltype(v)>(v, d.val >= 0 ? d.der : -d.der);
+        return DualScalar(v, d.val >= 0 ? d.der : -d.der);
     }
 
-    template <typename T, typename U>
-    auto max(const Dual<T>& a, const Dual<U>& b) {
+    inline DualScalar sin(const DualScalar& d) {
+        using std::sin; using std::cos;
+        return DualScalar(sin(d.val), d.der * cos(d.val));
+    }
+
+    inline DualScalar cos(const DualScalar& d) {
+        using std::sin; using std::cos;
+        return DualScalar(cos(d.val), -d.der * sin(d.val));
+    }
+
+    inline DualScalar pow(const DualScalar& d, double p) {
+        using std::pow;
+        auto v = pow(d.val, p);
+        return DualScalar(v, p * pow(d.val, p - 1.0) * d.der);
+    }
+
+    inline DualScalar max(const DualScalar& a, const DualScalar& b) {
         return a.val > b.val ? a : b;
     }
 
-    template <typename T, typename U>
-    auto min(const Dual<T>& a, const Dual<U>& b) {
+    inline DualScalar min(const DualScalar& a, const DualScalar& b) {
         return a.val < b.val ? a : b;
     }
 
-    template <typename T, typename U>
-    auto max(const Dual<T>& a, U b) {
-        return a.val > b ? a : Dual<T>(static_cast<T>(b), static_cast<T>(0));
+    inline DualScalar max(const DualScalar& a, double b) {
+        return a.val > b ? a : DualScalar(b, 0.0);
     }
 
-    template <typename T, typename U>
-    auto min(const Dual<T>& a, U b) {
-        return a.val < b ? a : Dual<T>(static_cast<T>(b), static_cast<T>(0));
+    inline DualScalar max(double a, const DualScalar& b) {
+        return a > b.val ? DualScalar(a, 0.0) : b;
     }
 
-    template <typename T>
-    auto sin(const Dual<T>& d) {
-        using std::sin; using std::cos;
-        return Dual<decltype(sin(d.val))>(sin(d.val), d.der * cos(d.val));
+    inline DualScalar min(const DualScalar& a, double b) {
+        return a.val < b ? a : DualScalar(b, 0.0);
     }
 
-    template <typename T>
-    auto cos(const Dual<T>& d) {
-        using std::sin; using std::cos;
-        return Dual<decltype(cos(d.val))>(cos(d.val), -d.der * sin(d.val));
+    inline DualScalar min(double a, const DualScalar& b) {
+        return a < b.val ? DualScalar(a, 0.0) : b;
     }
 
-    template <typename T, typename S>
-    auto pow(const Dual<T>& d, S p) {
-        using std::pow;
+    // Math functions for Dual2Scalar (Second-order AD)
+    inline Dual2Scalar sqrt(const Dual2Scalar& d) {
+        auto s = sqrt(d.val); // Uses DualScalar sqrt
+        if (s.val == 0) return Dual2Scalar(DualScalar(0, 0), DualScalar(0, 0)); 
+        return Dual2Scalar(s, d.der / (static_cast<DualScalar>(2.0) * s));
+    }
+
+    inline Dual2Scalar abs(const Dual2Scalar& d) {
+        auto v = abs(d.val); // Uses DualScalar abs
+        return Dual2Scalar(v, d.val.val >= 0 ? d.der : -d.der);
+    }
+
+    inline Dual2Scalar sin(const Dual2Scalar& d) {
+        return Dual2Scalar(sin(d.val), d.der * cos(d.val));
+    }
+
+    inline Dual2Scalar cos(const Dual2Scalar& d) {
+        return Dual2Scalar(cos(d.val), -d.der * sin(d.val));
+    }
+
+    inline Dual2Scalar pow(const Dual2Scalar& d, double p) {
         auto v = pow(d.val, p);
-        return Dual<decltype(v)>(v, static_cast<decltype(v)>(p) * pow(d.val, p - 1) * d.der);
+        return Dual2Scalar(v, static_cast<DualScalar>(p) * pow(d.val, p - 1.0) * d.der);
+    }
+
+    inline Dual2Scalar max(const Dual2Scalar& a, const Dual2Scalar& b) {
+        return a.val.val > b.val.val ? a : b;
+    }
+
+    inline Dual2Scalar min(const Dual2Scalar& a, const Dual2Scalar& b) {
+        return a.val.val < b.val.val ? a : b;
+    }
+
+    inline Dual2Scalar max(const Dual2Scalar& a, double b) {
+        return a.val.val > b ? a : Dual2Scalar(DualScalar(b, 0.0), DualScalar(0.0, 0.0));
+    }
+
+    inline Dual2Scalar max(double a, const Dual2Scalar& b) {
+        return a > b.val.val ? Dual2Scalar(DualScalar(a, 0.0), DualScalar(0.0, 0.0)) : b;
+    }
+
+    inline Dual2Scalar min(const Dual2Scalar& a, double b) {
+        return a.val.val < b ? a : Dual2Scalar(DualScalar(b, 0.0), DualScalar(0.0, 0.0));
+    }
+
+    inline Dual2Scalar min(double a, const Dual2Scalar& b) {
+        return a < b.val.val ? Dual2Scalar(DualScalar(a, 0.0), DualScalar(0.0, 0.0)) : b;
     }
 
     /**

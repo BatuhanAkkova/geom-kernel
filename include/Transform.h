@@ -41,6 +41,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             
             T lx = p.x * static_cast<T>(invMat.m[0]) + p.y * static_cast<T>(invMat.m[4]) + p.z * static_cast<T>(invMat.m[8])  + static_cast<T>(invMat.m[12]);
             T ly = p.x * static_cast<T>(invMat.m[1]) + p.y * static_cast<T>(invMat.m[5]) + p.z * static_cast<T>(invMat.m[9])  + static_cast<T>(invMat.m[13]);

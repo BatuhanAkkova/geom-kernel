@@ -7,26 +7,38 @@
 namespace Geom {
 
     // --- Smooth Minimum/Maximum Evaluators ---
-    template <typename T>
-    inline T smin(T a, T b, Scalar k) {
-        if constexpr (std::is_same_v<T, Scalar>) {
-            T h = std::max(static_cast<T>(k) - std::abs(a - b), static_cast<T>(0.0)) / static_cast<T>(k);
-            return std::min(a, b) - h * h * static_cast<T>(k * 0.25);
-        } else {
-            T h = max(static_cast<T>(k) - abs(a - b), static_cast<T>(0.0)) / static_cast<T>(k);
-            return min(a, b) - h * h * static_cast<T>(k * 0.25);
-        }
+    // --- Smooth Minimum/Maximum Overloads ---
+    
+    inline Scalar smin(Scalar a, Scalar b, Scalar k) {
+        using std::max; using std::min; using std::abs;
+        Scalar h = max(k - abs(a - b), 0.0) / k;
+        return min(a, b) - h * h * k * 0.25;
     }
 
-    template <typename T>
-    inline T smax(T a, T b, Scalar k) {
-        if constexpr (std::is_same_v<T, Scalar>) {
-            T h = std::max(static_cast<T>(k) - std::abs(a - b), static_cast<T>(0.0)) / static_cast<T>(k);
-            return std::max(a, b) + h * h * static_cast<T>(k * 0.25);
-        } else {
-            T h = max(static_cast<T>(k) - abs(a - b), static_cast<T>(0.0)) / static_cast<T>(k);
-            return max(a, b) + h * h * static_cast<T>(k * 0.25);
-        }
+    inline Scalar smax(Scalar a, Scalar b, Scalar k) {
+        using std::max; using std::min; using std::abs;
+        Scalar h = max(k - abs(a - b), 0.0) / k;
+        return max(a, b) + h * h * k * 0.25;
+    }
+
+    inline DualScalar smin(DualScalar a, DualScalar b, Scalar k) {
+        DualScalar h = max(static_cast<DualScalar>(k) - abs(a - b), static_cast<DualScalar>(0.0)) / static_cast<DualScalar>(k);
+        return min(a, b) - h * h * static_cast<DualScalar>(k * 0.25);
+    }
+
+    inline DualScalar smax(DualScalar a, DualScalar b, Scalar k) {
+        DualScalar h = max(static_cast<DualScalar>(k) - abs(a - b), static_cast<DualScalar>(0.0)) / static_cast<DualScalar>(k);
+        return max(a, b) + h * h * static_cast<DualScalar>(k * 0.25);
+    }
+
+    inline Dual2Scalar smin(Dual2Scalar a, Dual2Scalar b, Scalar k) {
+        Dual2Scalar h = max(static_cast<Dual2Scalar>(k) - abs(a - b), static_cast<Dual2Scalar>(0.0)) / static_cast<Dual2Scalar>(k);
+        return min(a, b) - h * h * static_cast<Dual2Scalar>(k * 0.25);
+    }
+
+    inline Dual2Scalar smax(Dual2Scalar a, Dual2Scalar b, Scalar k) {
+        Dual2Scalar h = max(static_cast<Dual2Scalar>(k) - abs(a - b), static_cast<Dual2Scalar>(0.0)) / static_cast<Dual2Scalar>(k);
+        return max(a, b) + h * h * static_cast<Dual2Scalar>(k * 0.25);
     }
 
     // --- Booleans ---
@@ -38,6 +50,8 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+             
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return std::min(a->eval(pt), b->eval(pt));
@@ -65,6 +79,7 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return std::max(a->eval(pt), b->eval(pt));
@@ -98,6 +113,7 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return std::max(a->eval(pt), -b->eval(pt));
@@ -126,6 +142,7 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return smin(a->eval(pt), b->eval(pt), k);
@@ -156,6 +173,7 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return smax(a->eval(pt), b->eval(pt), k);
@@ -190,6 +208,7 @@ namespace Geom {
         
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             if constexpr (std::is_same_v<T, Scalar>) {
                 Point3 pt(p.x, p.y, p.z);
                 return smax(a->eval(pt), -b->eval(pt), k);

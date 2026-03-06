@@ -85,9 +85,8 @@ namespace Geom {
     template <typename Derived>
     class SDFNode : public SDF {
     public:
-        Scalar eval(const Point3& p) const override {
-            Vec3T<Scalar> pt(p.x, p.y, p.z);
-            return static_cast<const Derived*>(this)->template evaluate<Scalar>(pt);
+        Scalar eval(const Vec3T<Scalar>& p) const override {
+            return static_cast<const Derived*>(this)->template evaluate<Scalar>(p);
         }
 
         DualScalar evalD(const Point3D& p) const override {

@@ -25,7 +25,7 @@ namespace Geom {
          * @param p The query point.
          * @return Scalar value of the field at p.
          */
-        virtual Scalar eval(const Point3& p) const = 0;
+        virtual Scalar eval(const Vec3T<Scalar>& p) const = 0;
 
         /**
          * @brief Evaluate with first-order dual numbers.

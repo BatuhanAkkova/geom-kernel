@@ -20,6 +20,8 @@ namespace ShapeKernel {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             Vec3T<T> t_start(static_cast<T>(start.x), static_cast<T>(start.y), static_cast<T>(start.z));
             Vec3T<T> t_end(static_cast<T>(end.x), static_cast<T>(end.y), static_cast<T>(end.z));
             
@@ -27,11 +29,7 @@ namespace ShapeKernel {
             Vec3T<T> ba = t_end - t_start;
             
             T h = pa.dot(ba) / ba.lengthSquared();
-            if constexpr (std::is_same_v<T, Scalar>) {
-                h = std::max(static_cast<T>(0.0), std::min(static_cast<T>(1.0), h));
-            } else {
-                h = max(static_cast<T>(0.0), min(static_cast<T>(1.0), h));
-            }
+            h = max(static_cast<T>(0.0), min(static_cast<T>(1.0), h));
             
             return (pa - ba * h).length() - static_cast<T>(radius);
         }
@@ -54,9 +52,11 @@ namespace ShapeKernel {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
-            if constexpr (std::is_same_v<T, Scalar>) return smin(a->eval(p), b->eval(p), filletRadius);
-            else if constexpr (std::is_same_v<T, DualScalar>) return smin(a->evalD(p), b->evalD(p), filletRadius);
-            else if constexpr (std::is_same_v<T, Dual2Scalar>) return smin(a->evalD2(p), b->evalD2(p), filletRadius);
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
+            if constexpr (std::is_same_v<T, Scalar>) return Geom::smin(a->eval(p), b->eval(p), filletRadius);
+            else if constexpr (std::is_same_v<T, DualScalar>) return Geom::smin(a->evalD(p), b->evalD(p), filletRadius);
+            else if constexpr (std::is_same_v<T, Dual2Scalar>) return Geom::smin(a->evalD2(p), b->evalD2(p), filletRadius);
             return static_cast<T>(0);
         }
 
@@ -84,6 +84,8 @@ namespace ShapeKernel {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             T distToPlane = abs(midPlane.evaluate<T>(p));
             T ribDist = distToPlane - static_cast<T>(thickness * 0.5);
             
@@ -92,15 +94,8 @@ namespace ShapeKernel {
             else if constexpr (std::is_same_v<T, DualScalar>) baseDist = base->evalD(p);
             else if constexpr (std::is_same_v<T, Dual2Scalar>) baseDist = base->evalD2(p);
             
-            T heightConstraint = baseDist - static_cast<T>(height);
-            T solidRib;
-            if constexpr (std::is_same_v<T, Scalar>) {
-                solidRib = std::max(ribDist, heightConstraint);
-                return std::min(baseDist, solidRib);
-            } else {
-                solidRib = max(ribDist, heightConstraint);
-                return min(baseDist, solidRib);
-            }
+            T solidRib = max(ribDist, baseDist - static_cast<T>(height));
+            return min(baseDist, solidRib);
         }
 
         BoundingBox boundingBox() const override {
@@ -123,6 +118,8 @@ namespace ShapeKernel {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             if constexpr (std::is_same_v<T, Scalar>) return std::max(body->eval(p), -path->eval(p));
             else if constexpr (std::is_same_v<T, DualScalar>) return max(body->evalD(p), path->evalD(p) * -1.0);
             else if constexpr (std::is_same_v<T, Dual2Scalar>) return max(body->evalD2(p), path->evalD2(p) * -1.0);
@@ -146,6 +143,8 @@ namespace ShapeKernel {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            
             T d;
             if constexpr (std::is_same_v<T, Scalar>) d = body->eval(p);
             else if constexpr (std::is_same_v<T, DualScalar>) d = body->evalD(p);

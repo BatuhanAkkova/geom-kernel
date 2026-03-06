@@ -24,6 +24,7 @@ namespace Geom {
 
         template <typename T>
         T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
             // Note: Since the grid is discrete, gradients/hessians of the grid itself 
             // usually requires finite differences or knowing the analytical derivative of trilinear interp.
             // For MVP, we will cast point to Scalar, perform trilinear eval, and return constant Dual.
@@ -38,6 +39,7 @@ namespace Geom {
             // Use .val chain to get raw doubles if T is Dual, but we can do it generically.
             // Actually, best to just write it with T to get full AD if we use standard operators!
             
+            using std::max; using std::min; using std::abs;
             T gx = (p.x - static_cast<T>(domain.min.x)) / static_cast<T>(std::max(1e-9, voxelSizeX)) - static_cast<T>(0.5);
             T gy = (p.y - static_cast<T>(domain.min.y)) / static_cast<T>(std::max(1e-9, voxelSizeY)) - static_cast<T>(0.5);
             T gz = (p.z - static_cast<T>(domain.min.z)) / static_cast<T>(std::max(1e-9, voxelSizeZ)) - static_cast<T>(0.5);
