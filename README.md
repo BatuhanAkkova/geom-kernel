@@ -97,24 +97,36 @@ Mat3 hess = result->hessian(Point3(5, 5, 5));
 
 ---
 
+---
+
 ## Performance & Showcase
 
-GeomKernel is optimized for high-throughput geometric evaluation. In our latest benchmark (Gallery Showcase), the kernel achieved **~3.5 Million triangles per second** on a standard consumer CPU (multi-threaded).
+GeomKernel is optimized for high-throughput geometric evaluation. In our latest benchmark, the kernel achieved **~3.5 Million triangles per second** on a standard consumer CPU (multi-threaded).
 
-### Showcase Results
+### Smooth Booleans
+| Union | Intersection | Difference |
+|:---:|:---:|:---:|
+| ![Union](assets/union.png) | ![Intersection](assets/intersection.png) | ![Difference](assets/difference.png) |
+| *Smooth Union* | *Smooth Intersection* | *Smooth Difference* |
 
-![Gyroid Lattice](gallery_gyroid_lattice.png)
-*Gyroid intersection with a Box.*
+### TPMS Structures (Lattices)
+| Gyroid | Diamond | Schwarz P |
+|:---:|:---:|:---:|
+| ![Gyroid](assets/gyroid.png) | ![Diamond](assets/diamond.png) | ![Schwarz P](assets/schwarzp.png) |
+| *Gyroid Surface* | *Diamond TPMS* | *Schwarz P Surface* |
 
-![Smooth Chain](gallery_smooth_chain.png)
-*SmoothUnion of two interlocking Toruses.*
+### Advanced Features
+| Dual Contouring | Smooth Junction |
+|:---:|:---:|
+| ![Dual Contouring](assets/dual_contouring.png) | ![Smooth Junction](assets/junction.png) |
+| *Sharp Feature Preservation* | *SDF Smooth Junction* |
 
-![Diamond Ball](gallery_diamond_ball.png)
-*Diamond TPMS intersection with a Sphere.*
+### Legacy Gallery
+| ![Gyroid Lattice](gallery_gyroid_lattice.png) | ![Smooth Chain](gallery_smooth_chain.png) | ![Diamond Ball](gallery_diamond_ball.png) | ![Transformed Box](gallery_transformed_box.png) |
+|---|---|---|---|
+| *Gyroid + Box* | *Smooth Chain* | *Diamond + Sphere* | *Transformed Box* |
 
-![Transformed Box](gallery_transformed_box.png)
-*Box with non-orthogonal composite transformation.*
-
+### Performance Table
 | Shape | Triangles | Meshing Time | Feature Used |
 |---|---|---|---|
 | **Gyroid Lattice** | 490,264 | 0.165s | TPMS + Intersection |

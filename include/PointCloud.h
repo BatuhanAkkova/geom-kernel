@@ -12,7 +12,7 @@ namespace Geom {
      * Uses a simple octree/grid for spatial acceleration to find nearest points.
      * Signs are estimated using a winding number approximation.
      */
-    class PointCloudSDF : public SDF {
+    class PointCloudSDF : public SDFNode<PointCloudSDF> {
         struct Point {
             Point3 pos;
             Vec3 normal;
@@ -30,43 +30,37 @@ namespace Geom {
             estimateNormals();
         }
 
-        Scalar eval(const Point3& p) const override {
-            if (points.empty()) return 1e10;
+        template <typename T>
+        T evaluate(const Vec3T<T>& p) const {
+            using std::max; using std::min; using std::abs; using std::sqrt; using std::pow; using std::sin; using std::cos;
+            if (points.empty()) return static_cast<T>(1e10);
 
-            Scalar minLineDistSq = std::numeric_limits<Scalar>::infinity();
+            T minLineDistSq = static_cast<T>(1e18);
             int bestIdx = -1;
 
             // Brute force nearest search (for MVP). 
-            // In a production kernel, we would use a KD-Tree or Octree here.
             for (size_t i = 0; i < points.size(); ++i) {
-                Scalar d2 = (p - points[i].pos).lengthSquared();
+                Vec3T<T> pi(static_cast<T>(points[i].pos.x), static_cast<T>(points[i].pos.y), static_cast<T>(points[i].pos.z));
+                T d2 = (p - pi).lengthSquared();
                 if (d2 < minLineDistSq) {
                     minLineDistSq = d2;
                     bestIdx = (int)i;
                 }
             }
 
-            Scalar dist = std::sqrt(minLineDistSq);
+            T dist = sqrt(minLineDistSq);
             
-            // Sign determination via Winding Number (approximate for points)
-            // generalized winding number w(p) = sum( area_i * dot(n_i, p_i - p) / dist_i^3 )
-            // Since we don't have "areas", we use a distance-weighted normal dot.
-            Scalar wn = 0;
+            T wn = static_cast<T>(0);
             for (const auto& pt : points) {
-                Vec3 v = pt.pos - p;
-                Scalar r = v.length();
-                if (r < 1e-6) continue;
-                // contribution ~ solid angle
-                wn += pt.normal.dot(v) / (r * r * r);
+                Vec3T<T> p_pos(static_cast<T>(pt.pos.x), static_cast<T>(pt.pos.y), static_cast<T>(pt.pos.z));
+                Vec3T<T> p_normal(static_cast<T>(pt.normal.x), static_cast<T>(pt.normal.y), static_cast<T>(pt.normal.z));
+                Vec3T<T> v = p_pos - p;
+                T r = v.length();
+                if (r < static_cast<T>(1e-6)) continue;
+                wn = wn + p_normal.dot(v) / (r * r * r);
             }
 
-            // Winding number > 0.5 (scaled) indicates inside
-            return (wn > 0) ? -dist : dist;
-        }
-
-        DualScalar evalD(const Point3D& p) const override {
-            // Default to central difference for point clouds as mapping is discrete
-            return DualScalar(eval(Point3(p.x.val, p.y.val, p.z.val)));
+            return (wn > static_cast<T>(0)) ? -dist : dist;
         }
 
         BoundingBox boundingBox() const override {

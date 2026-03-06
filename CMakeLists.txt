@@ -12,44 +12,24 @@ target_include_directories(GeomKernel PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
-# Test / Example Executable
-add_executable(kernel_test src/main.cpp)
-target_link_libraries(kernel_test PRIVATE GeomKernel)
+# Consolidated Tests
+add_executable(test_primitives src/test_primitives.cpp)
+target_link_libraries(test_primitives PRIVATE GeomKernel)
 
-add_executable(mvp_test src/mvp_test.cpp)
-target_link_libraries(mvp_test PRIVATE GeomKernel)
+add_executable(test_booleans src/test_booleans.cpp)
+target_link_libraries(test_booleans PRIVATE GeomKernel)
 
-# Phase 2 Test
-add_executable(phase2_test src/phase2_test.cpp)
-target_link_libraries(phase2_test PRIVATE GeomKernel)
+add_executable(test_smooth_booleans src/test_smooth_booleans.cpp)
+target_link_libraries(test_smooth_booleans PRIVATE GeomKernel)
 
-# Phase 3 Benchmark
-add_executable(phase3_benchmark src/phase3_benchmark.cpp)
-target_link_libraries(phase3_benchmark PRIVATE GeomKernel)
+add_executable(test_tpms src/test_tpms.cpp)
+target_link_libraries(test_tpms PRIVATE GeomKernel)
 
-# Phase 4 Test
-add_executable(phase4_test src/phase4_test.cpp)
-target_link_libraries(phase4_test PRIVATE GeomKernel)
+add_executable(test_core_utils src/test_core_utils.cpp)
+target_link_libraries(test_core_utils PRIVATE GeomKernel)
 
-# Phase 5 Test
-add_executable(phase5_test src/phase5_test.cpp)
-target_link_libraries(phase5_test PRIVATE GeomKernel)
-
-# Phase 6 Test
-add_executable(phase6_test src/phase6_test.cpp)
-target_link_libraries(phase6_test PRIVATE GeomKernel)
-
-# Phase 7 Test
-add_executable(phase7_test src/phase7_test.cpp)
-target_link_libraries(phase7_test PRIVATE GeomKernel)
-
-# Phase 8 Test
-add_executable(phase8_test src/phase8_test.cpp)
-target_link_libraries(phase8_test PRIVATE GeomKernel)
-
-# Refactor Test
-add_executable(refactor_test src/refactor_test.cpp)
-target_link_libraries(refactor_test PRIVATE GeomKernel)
+add_executable(test_performance src/test_performance.cpp)
+target_link_libraries(test_performance PRIVATE GeomKernel)
 
 # Gallery Showcase
 add_executable(gallery_showcase src/gallery_showcase.cpp)

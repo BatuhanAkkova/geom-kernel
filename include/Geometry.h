@@ -54,9 +54,12 @@ namespace Geom {
             if constexpr (std::is_same_v<T, Scalar>) {
                 return sqrt(lsq);
             } else {
-                // Protect against zero length causing NaN in gradients for AD types
-                // We use a safe threshold for the dual value
-                return lsq.val > 1e-12 ? sqrt(lsq) : T(0); 
+                // For Dual/Dual2 types, we can access .val to avoid sqrt(0) issues in derivatives
+                if constexpr (requires { lsq.val; }) {
+                    return lsq.val > 1e-12 ? sqrt(lsq) : T(0);
+                } else {
+                    return sqrt(lsq);
+                }
             }
         }
 
